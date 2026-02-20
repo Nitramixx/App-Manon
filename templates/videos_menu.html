@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% block title %}Vidéos - Jeux Manon{% endblock %}
+
+{% block nav %}VIDEO{% endblock %}
+
+{% block content %}
+    <h1 class="page-title">CHOISIS TON THEME !</h1>
+    <p class="page-subtitle">VIDEO</p>
+
+    <div class="theme-grid">
+        {% for album in albums %}
+            <a href="{{ url_for('video_player', tag_name=album.name) }}" class="theme-card">
+                
+                <div class="theme-image-box">
+                    <img src="{{ url_for('static', filename='uploads/themes/' + album.img) }}#media-focus" 
+                         alt="{{ album.name }}"
+                         onerror="this.src='{{ url_for('static', filename='uploads/icones/chat.png') }}'">
+                </div>
+                
+                <h2>{{ album.name | capitalize }}</h2>
+            </a>
+        {% else %}
+            <p style="text-align:center; width:100%; grid-column: 1/-1;">Aucun album vidéo disponible.</p>
+        {% endfor %}
+    </div>
+
+    <div style="margin-top: 30px; text-align: center;">
+        <a href="{{ url_for('index') }}" class="btn-back" style="text-decoration: none; font-weight: bold; color: #555;">
+            ⬅ RETOUR ACCUEIL
+        </a>
+    </div>
+{% endblock %}

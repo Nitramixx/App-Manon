@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block nav %}ECRITURE{% endblock %}
+
+{% block title %}Jeu de Recopiage{% endblock %}
+
+{% block content %}
+
+    {% if bg_music %}
+        <audio autoplay loop id="ambianceAudio">
+            <source src="{{ url_for('static', filename='musics/' + bg_music) }}" type="audio/mp3">
+        </audio>
+        <button onclick="toggleAmbiance()" style="position:fixed; top:80px; right:20px; z-index:100; background:white; border:none; border-radius:50%; width:40px; height:40px; box-shadow:0 2px 5px rgba(0,0,0,0.2); cursor:pointer;">
+            🔊
+        </button>
+        <script>
+            function toggleAmbiance() {
+                const audio = document.getElementById('ambianceAudio');
+                if (audio.paused) audio.play(); else audio.pause();
+            }
+            document.getElementById('ambianceAudio').volume = 0.2;
+        </script>
+    {% endif %}
+
+<style>
+    /* ... (Ton CSS reste identique, je ne le remets pas pour alléger la réponse, garde ton CSS actuel) ... */
+    /* Assure-toi juste de garder les classes .model-letter, .letter-box, etc. */
+    .game-container { display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 30px; max-width: 1100px; margin: 0 auto; height: 70vh; padding: 20px; box-sizing: border-box; }
+    .left-panel { flex: 0 0 350px; height: 100%; display: flex; align-items: center; justify-content: center; background: transparent; border: none; box-shadow: none; }
+    .word-image { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+    .word-image img { max-width: 100%; max-height: 350px; object-fit: contain; border: none; border-radius: 0; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1)); }
+    .right-panel { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .word-area { display: flex; flex-direction: column; align-items: center; margin-bottom: 30px; }
+    .model-row { display: flex; gap: 10px; justify-content: center; margin-bottom: 5px; }
+    .model-letter { width: 55px; height: 55px; display: flex; align-items: flex-end; justify-content: center; font-size: 40px; font-weight: 900; color: #333; font-family: 'Lato', sans-serif; }
+    .input-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+    .letter-box { width: 55px; height: 65px; border: 3px solid #ccc; border-radius: 12px; font-size: 35px; font-weight: bold; display: flex; align-items: center; justify-content: center; background: white; text-transform: uppercase; color: #333; box-shadow: 0 4px 0 #ddd; transition: all 0.1s ease; }
+    .letter-box.correct { background-color: #4ade80; color: white; border-color: #22c55e; transform: scale(1.1); }
+    .letter-box.wrong { background-color: #f87171; color: white; border-color: #ef4444; }
+    .input-trigger { cursor: text; padding: 15px 30px; border: 2px dashed #66635d; border-radius: 50px; background: #fbc4cb; text-align: center; width: fit-content; transition: transform 0.2s; }
+    .input-trigger:hover { transform: scale(1.05); }
+    .input-trigger p { margin: 0; font-weight: bold; color: #b45309; }
+    #success-message { display: none; text-align: center; animation: popIn 0.5s ease; }
+    @keyframes popIn { 0% { transform: scale(0); opacity: 0; } 80% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); } }
+    #real-input { opacity: 0; position: absolute; pointer-events: none; }
+    @media (max-width: 900px) { .game-container { flex-direction: column; height: auto; gap: 20px; } .left-panel { flex: 0 0 auto; width: 100%; height: auto; } .word-image img { max-height: 180px; } }
+</style>
+
+<div class="game-container">
+    
+    <div class="left-panel">
+        <div class="word-image">
+            <img id="gameImage" 
+                 src="{{ url_for('static', filename='uploads/icones/' + image_name) }}" 
+                 alt="Image du mot" 
+                 onerror="this.src='https://via.placeholder.com/300?text=Image+Manquante'">
+        </div>
+    </div>
+
+    <div class="right-panel" onclick="focusInput()">
+        
+        <div class="word-area" id="display-container">
+            <div class="model-row" id="modelRow">
+                {% for char in word_obj.word %}
+                    <div class="model-letter">{{ char }}</div>
+                {% endfor %}
+            </div>
+
+            <div class="input-row" id="inputRow">
+                {% for char in word_obj.word %}
+                    <div class="letter-box" id="box-{{ loop.index0 }}"></div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div id="success-message">
+            <h1 style="color: #22c55e; font-size: 40px; margin-bottom: 20px;">BRAVO ! 🎉</h1>
+            
+            <button onclick="loadNextWord()" class="btn-next" id="next-btn" 
+               style="padding: 15px 40px; font-size: 1.5rem; background: #22c55e; color: white; border-radius: 50px; border:none; cursor:pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
+                Mot Suivant ➔
+            </button>
+        </div>
+
+        <div class="input-trigger" id="input-area">
+            <input type="text" id="real-input" autocomplete="off" oninput="checkInput()">
+            <p><img width="100px" src="{{ url_for('static', filename='uploads/icones/UNLOCK-KEY.png') }}" alt="CLIQUE ICI POUR ÉCRIRE"></p>
+        </div>
+        
+        <br><br>
+        <a href="{{ url_for('writing_menu') }}" class="btn-back">⬅ RETOUR MENU</a>
+
+        <input type="hidden" id="target_word" value="{{ word_obj.word }}">
+    </div>
+
+</div>
+
+<script>
+    // Variable globale pour savoir quelle catégorie on joue
+    const currentCategory = "{{ category }}";
+
+    function focusInput() {
+        const input = document.getElementById('real-input');
+        if (!input.disabled) input.focus();
+    }
+
+    function checkInput() {
+        const input = document.getElementById('real-input');
+        const target = document.getElementById('target_word').value.toUpperCase();
+        const userVal = input.value.toUpperCase();
+        
+        for (let i = 0; i < target.length; i++) {
+            const box = document.getElementById('box-' + i);
+            if(!box) continue; // Sécurité
+
+            if (i < userVal.length) {
+                const charTyped = userVal[i];
+                box.innerText = charTyped;
+                if (charTyped === target[i]) {
+                    box.className = 'letter-box correct';
+                } else {
+                    box.className = 'letter-box wrong';
+                }
+            } else {
+                box.innerText = '';
+                box.className = 'letter-box';
+            }
+        }
+
+        if (userVal === target) {
+            input.disabled = true;
+            input.blur();
+            document.getElementById('input-area').style.display = 'none';
+            document.getElementById('success-message').style.display = 'block';
+            document.getElementById('next-btn').focus();
+        }
+    }
+
+    // --- FONCTION QUI CHARGE LE PROCHAIN MOT SANS RECHARGER LA PAGE ---
+    function loadNextWord() {
+        fetch('/api/writing/next/' + currentCategory)
+        .then(response => response.json())
+        .then(data => {
+            if(data.error) {
+                alert("Erreur : " + data.error);
+                return;
+            }
+
+            // 1. Mise à jour de l'image
+            const img = document.getElementById('gameImage');
+            img.src = "/static/uploads/icones/" + data.image;
+            
+            // 2. Mise à jour du mot cible caché
+            document.getElementById('target_word').value = data.word;
+
+            // 3. Reconstruction de l'interface (Modèle + Cases)
+            const modelRow = document.getElementById('modelRow');
+            const inputRow = document.getElementById('inputRow');
+            
+            modelRow.innerHTML = '';
+            inputRow.innerHTML = '';
+
+            // Boucle JS pour recréer les DIVs
+            for(let i=0; i < data.word.length; i++) {
+                const char = data.word[i];
+                
+                // Lettre modèle
+                const divModel = document.createElement('div');
+                divModel.className = 'model-letter';
+                divModel.innerText = char;
+                modelRow.appendChild(divModel);
+
+                // Case vide
+                const divBox = document.createElement('div');
+                divBox.className = 'letter-box';
+                divBox.id = 'box-' + i;
+                inputRow.appendChild(divBox);
+            }
+
+            // 4. Reset des inputs et affichage
+            const input = document.getElementById('real-input');
+            input.value = '';
+            input.disabled = false;
+            
+            document.getElementById('input-area').style.display = 'block'; // Réafficher la zone de saisie
+            document.getElementById('success-message').style.display = 'none'; // Cacher le Bravo
+
+            // 5. Focus
+            setTimeout(focusInput, 100);
+        })
+        .catch(err => console.error("Erreur chargement mot:", err));
+    }
+    
+    window.onload = focusInput;
+</script>
+
+{% endblock %}

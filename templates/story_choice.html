@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+
+{% block title %}Histoires : {{ current_tag }} - Jeux Manon{% endblock %}
+
+{% block nav %}HISTOIRE{% endblock %}
+
+{% block content %}
+    <div class="menu-page">
+        
+        <h1 class="page-title">CHAPITRE : {{ current_tag | upper }}</h1>
+        <p class="page-subtitle">CHOISIS UNE HISTOIRE</p>
+
+        <div class="theme-grid">
+            {% for story in stories %}
+                <a href="{{ url_for('story_reader', story_id=story.id) }}#media-focus" class="theme-card">
+                    
+                    <div class="theme-image-box">
+                        {% if story.cover %}
+                            <img src="{{ url_for('static', filename='uploads/stories/' + story.cover) }}" 
+                                 alt="{{ story.title }}"
+                                 onerror="this.src='{{ url_for('static', filename='uploads/icones/theme_Princesse.png') }}'">
+                        {% else %}
+                            <img src="{{ url_for('static', filename='uploads/icones/theme_Princesse.png') }}" 
+                                 alt="Image par défaut">
+                        {% endif %}
+                    </div>
+                    
+                    <h2>{{ story.title }}</h2>
+                </a>
+            {% else %}
+                <p style="text-align:center; width:100%; grid-column: 1/-1;">
+                    Aucune histoire trouvée pour ce thème.
+                </p>
+            {% endfor %}
+        </div>
+
+        <div style="margin-top: 30px; text-align: center;">
+            <a href="{{ url_for('story_menu') }}" class="btn-back">⬅ RETOUR THEMES</a>
+        </div>
+    </div>
+
+    {% if bg_music %}
+        <audio autoplay loop id="ambianceAudio">
+            <source src="{{ url_for('static', filename='musics/' + bg_music) }}" type="audio/mp3">
+        </audio>
+        
+        <button onclick="toggleAmbiance()" style="position:fixed; top:20px; right:20px; z-index:100; background:white; border:none; border-radius:50%; width:40px; height:40px; box-shadow:0 2px 5px rgba(0,0,0,0.2); cursor:pointer;">
+            🔊
+        </button>
+
+        <script>
+            function toggleAmbiance() {
+                const audio = document.getElementById('ambianceAudio');
+                if (audio.paused) audio.play();
+                else audio.pause();
+            }
+            // Réglage volume doux pour l'ambiance
+            document.getElementById('ambianceAudio').volume = 0.3; 
+        </script>
+    {% endif %}
+{% endblock %}

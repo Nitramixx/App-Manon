@@ -1,0 +1,970 @@
+/* Import de la police Lato */
+@import url('https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&display=swap');
+
+:root {
+    /* --- COULEURS --- */
+    --bg-color: #fdf2f8;      /* Rose très pâle */
+    --text-color: #333333;
+    
+    /* Dégradé Header (Rose -> Bleu -> Vert -> Jaune) */
+    --gradient-header: linear-gradient(90deg, #fbc4cb 0%, #bae6fd 33%, #bbf7d0 66%, #fde68a 100%);
+    
+    /* Couleurs Manon */
+    --pink-primary: #fbc4cb;
+    --pink-text: #ffffff;
+    
+    /* Boutons Pastels */
+    --btn-blue-pastel: #bae6fd;
+    --btn-blue-hover: #90cdf4;
+    
+    --white-card: #ffffff;
+    --border-radius: 20px;
+    --shadow-soft: 0 4px 15px rgba(0,0,0,0.08);
+}
+
+body {
+    font-family: 'Lato', sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    margin: 0;
+    padding: 0;
+    text-transform: uppercase;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* --- HEADER --- */
+header {
+    background: var(--gradient-header);
+    padding: 20px 30px;
+    margin-bottom: 40px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    border-bottom-left-radius: 30px;
+    border-bottom-right-radius: 30px;
+}
+
+/* --- BARRE DE NAVIGATION (FLOTTANTE) --- */
+.main-nav {
+    padding: 15px 25px;
+    border-radius: var(--border-radius);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 900;
+    font-size: 1.2rem;
+    box-shadow: var(--shadow-soft);
+}
+
+.nav-left { display: flex; align-items: center; gap: 15px; }
+.home-link { text-decoration: none; font-size: 1.5rem; padding-right: 15px; border-right: 2px solid #eee; width: 40px;}
+.nav-breadcrumb { margin-left: 5px; font-size: 2rem;}
+.nav-admin { text-decoration: none; color: #b45309; background-color: #fef3c7; padding: 10px 20px; border-radius: 12px; border: 2px solid #f59e0b; font-size: 1rem; transition: transform 0.2s;}
+.nav-admin:hover { transform: scale(1.05); }
+
+/* --- TITRES --- */
+.page-title {
+    font-size: 2.5rem;
+    font-weight: 900;
+    text-align: center;
+    color: var(--pink-primary);
+    margin-bottom: 10px;
+    text-shadow: 2px 2px 0px #fff;
+}
+.page-subtitle {
+    font-size: 1.5rem;
+    text-align: center;
+    color: #555;
+    margin-bottom: 40px;
+    letter-spacing: 2px;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+    padding: 0 20px;
+    box-sizing: border-box;
+    flex: 1;
+}
+
+/* --- GRILLES & CARTES --- */
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 30px;
+    padding-bottom: 50px;
+}
+
+/* Style des boutons du menu (Rose Manon) */
+.card-link {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    
+    background-color: var(--pink-primary);
+    color: var(--pink-text);
+    
+    padding: 30px 20px;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-soft);
+    transition: transform 0.2s, background-color 0.2s, box-shadow 0.2s;
+    
+    font-weight: 900;
+    font-size: 1.4rem;
+    letter-spacing: 1px;
+    text-align: center;
+    min-height: 140px;
+}
+
+.card-link:hover {
+    transform: translateY(-8px);
+    background-color: var(--pink-hover);
+    box-shadow: 0 10px 25px rgba(236, 72, 153, 0.4);
+}
+
+.card-link .icon {
+    font-size: 4rem;
+    margin-bottom: 15px;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+}
+
+.card-link .icon img {
+    width: 60%;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+}
+
+/* --- BOUTON RETOUR (Style Pilule) --- */
+.btn-back, .btn-next{
+    display: inline-flex;       /* Pour bien aligner l'icône et le texte */
+    align-items: center;
+    justify-content: center;
+    gap: 10px;                  /* Espace entre la flèche et le texte */
+    
+    background-color: #ffffff;  /* Fond blanc propre */
+    color: var(--text-color);   /* Gris foncé pour la lisibilité */
+    border: 3px solid #eee;     /* Bordure discrète */
+    
+    padding: 12px 30px;         /* Assez gros pour être facile à cliquer */
+    border-radius: 50px;        /* Forme très arrondie (Pilule) */
+    
+    font-family: 'Lato', sans-serif;
+    font-weight: 900;           /* Gras comme les titres */
+    text-transform: uppercase;
+    text-decoration: none;
+    font-size: 1.1rem;
+    
+    box-shadow: var(--shadow-soft); /* La même ombre que tes cartes */
+    transition: all 0.2s ease;
+}
+
+/* Effet au survol : il monte un peu et prend la couleur du thème */
+.btn-back:hover, .btn-next:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+    border-color: var(--pink-primary); /* La bordure devient rose Manon */
+    color: var(--pink-primary);        /* Le texte devient rose Manon */
+}
+
+/* Effet au clic : il s'enfonce */
+.btn-back:active {
+    transform: translateY(0);
+    box-shadow: none;
+}
+
+/* =================================================================
+   --- GRILLE 3 COLONNES (Histoire, Ecriture, Memory) ---
+   ================================================================= */
+.theme-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* 3 colonnes strictes */
+    gap: 30px;
+    padding-bottom: 50px;
+}
+
+.theme-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-decoration: none;
+    transition: transform 0.2s;
+}
+.theme-card:hover { transform: scale(1.05); }
+
+/* L'image rose (Placeholder) */
+.theme-image-box {
+    width: 100%;
+    aspect-ratio: 2 / 1; /* Carré */
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    margin-bottom: 15px;
+    box-shadow: var(--shadow-soft);
+}
+
+.theme-image-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border: none; /* Pas de bordure ici, l'image fait le style */
+}
+
+/* AJOUT : Pour que les vidéos miniatures dans le menu ressemblent aux images */
+.theme-image-box video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Remplit le carré sans déformer */
+    border: none;
+}
+
+/* On s'assure que le conteneur a bien la bordure rose si l'image ne l'a pas */
+.theme-image-box {
+    border: 5px solid var(--pink-primary); /* Le cadre rose autour de la miniature */
+    box-sizing: border-box;
+    background: #fff;
+}
+
+.theme-card h2 {
+    font-size: 1.2rem;
+    color: #333;
+    margin: 0;
+}
+
+/* =================================================================
+   --- SPLIT SCREEN (Musique, Vidéo, Photo) ---
+   ================================================================= */
+.split-layout {
+    display: flex;
+    gap: 30px;
+    height: 65vh; /* Hauteur fixe pour l'écran divisé */
+    margin-bottom: 40px;
+}
+
+/* Zone Gauche : Lecteur */
+.player-zone {
+    flex: 2; /* Prend 2/3 de la largeur */
+    background: white;
+    border-radius: var(--border-radius);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    box-shadow: var(--shadow-soft);
+}
+
+.black-screen {
+    background-color: black;
+    width: 100%;
+    flex-grow: 1; /* Prend toute la place dispo */
+    border-radius: 15px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    border: 4px solid #333;
+}
+
+.black-screen video, .black-screen img {
+    max-width: 100%;
+    max-height: 100%;
+    border: none;
+    box-shadow: none;
+}
+
+/* Contrôles (Boutons bleus pastels) */
+.controls-area {
+    display: flex;
+    gap: 20px;
+    width: 100%;
+    justify-content: center;
+}
+
+.btn-control {
+    background-color: var(--btn-blue-pastel);
+    border: none;
+    padding: 15px 30px;
+    border-radius: 50px;
+    font-size: 1.5rem;
+    cursor: pointer;
+    box-shadow: 0 4px 0 #90cdf4;
+    transition: transform 0.1s;
+    color: #fff;
+    font-weight: bold;
+}
+.btn-control:active { transform: translateY(4px); box-shadow: none; }
+
+/* Zone Droite : Menu Cercles */
+.menu-zone {
+    flex: 1; /* Prend 1/3 de la largeur */
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: var(--border-radius);
+    padding: 20px;
+    overflow-y: auto; /* Scroll si trop de cercles */
+}
+
+.circle-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 20px;
+}
+
+/* Les cercles noirs */
+.circle-item {
+    width: 110px;
+    height: 110px;
+    background-color: #000;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-decoration: none;
+    color: white;
+    font-weight: bold;
+    font-size: 0.9rem;
+    text-align: center;
+    padding: 5px;
+    transition: transform 0.2s;
+    border: 3px solid white;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+.circle-item:hover { transform: scale(1.1); background-color: var(--pink-primary); }
+
+/* Miniature dans le cercle (optionnel si tu mets des images plus tard) */
+.circle-item img {
+    width: 100%; height: 100%; object-fit: cover; border-radius: 50%; opacity: 0.7;
+}
+
+/* Bouton autoplay (Secours) */
+.autoplay-resume {
+    position: fixed; top: 100px; left: 50%; transform: translateX(-50%);
+    padding: 12px 25px; background: #60a5fa; color: white;
+    border: none; border-radius: 50px; font-weight: bold; cursor: pointer; z-index: 1000;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+/* =================================================================
+   --- SECTION PLANNING (STYLE IMAGE "CALENDRIER") ---
+   ================================================================= */
+
+/* --- 1. COULEURS DES JOURS (Palette Pastel Image) --- */
+.day-0 { background-color: #fbc4cb; color: white; } /* Lundi - Rose */
+.day-1 { background-color: #cfebfb; color: white; } /* Mardi - Bleu ciel */
+.day-2 { background-color: #bbf3ee; color: white; } /* Mercredi - Turquoise */
+.day-3 { background-color: #c9e4c5; color: white; } /* Jeudi - Vert amande */
+.day-4 { background-color: #fddebd; color: white; } /* Vendredi - Pêche/Orange */
+.day-5 { background-color: #a0c4ff; color: white; } /* Samedi - Bleu roi (Hors image mais cohérent) */
+.day-6 { background-color: #bdb2ff; color: white; } /* Dimanche - Violet */
+
+/* --- 2. BANDEAU SEMAINE (Rectangles Arrondis) --- */
+.week-bar {
+    display: flex;
+    justify-content: center;
+    gap: 15px; /* Espace entre les cartes jours */
+    margin-bottom: 30px;
+    padding: 0 20px;
+}
+
+.day-box {
+    flex: 1; /* Les cartes se partagent toute la largeur */
+    max-width: 180px; /* Largeur max pour ne pas être énormes sur grand écran */
+    height: 180px;    /* Hauteur fixe pour faire des rectangles */
+    border-radius: 25px; /* Coins très arrondis */
+    
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start; /* Texte en haut */
+    padding-top: 20px;
+    
+    font-weight: 900;
+    font-size: 2.5rem; /* Grosse lettre */
+    font-style: italic; /* Style comme sur l'image */
+    position: relative;
+    box-shadow: var(--shadow-soft);
+    transition: transform 0.2s;
+}
+
+/* Le jour actuel est un peu plus grand */
+.day-box.is-today {
+    transform: scale(1.05);
+    border: 4px solid white;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    z-index: 10;
+}
+
+/* Les petits points/cercles en bas des cartes jours */
+/* --- Conteneur des miniatures en bas de la carte jour --- */
+.day-mini-events {
+    display: flex;
+    gap: 8px;              /* Espace entre les miniatures */
+    position: absolute;
+    bottom: 10px;          /* On colle en bas */
+    left: 50%;             /* On centre horizontalement */
+    transform: translateX(-50%); /* Ajustement pour centrer parfaitement */
+    width: 90%;            /* Largeur max pour ne pas dépasser */
+    justify-content: center;
+    flex-wrap: wrap;       /* Si trop d'images, ça passe à la ligne */
+}
+
+/* --- La nouvelle miniature (Image) --- */
+.mini-event-thumb {
+    width: 45px;           /* Taille beaucoup plus grande (avant c'était 8px) */
+    height: 45px;
+    border-radius: 50%;    /* Rond */
+    object-fit: cover;     /* L'image remplit le rond sans être écrasée */
+    border: 3px solid white; /* Joli contour blanc pour ressortir sur la couleur */
+    background-color: white; /* Fond blanc si l'image est transparente */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+/* Tu peux varier les couleurs des points via le HTML si besoin (ex: class="mini-dot blue") */
+
+
+/* --- 3. ZONE PRINCIPALE (SPLIT) --- */
+.planning-split {
+    display: flex;
+    align-items: flex-end; /* Aligne le bouton validation en bas avec la carte */
+    justify-content: center;
+    gap: 30px;
+    padding-bottom: 40px; /* Padding en bas de page */
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+/* --- 4. CARTE CENTRALE (La Tâche) --- */
+.current-task-card {
+    flex: 3; /* Prend la place principale */
+    background-color: #fbc4cb; /* Rose pastel comme sur l'image */
+    color: white;
+    border-radius: 35px; /* Coins très arrondis */
+    padding: 30px;
+    min-height: 350px;
+    
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    box-shadow: var(--shadow-soft);
+    position: relative;
+}
+
+/* Texte de la question "AS TU PRIS..." */
+.current-task-card h2 {
+    font-size: 2.2rem;
+    font-style: italic;
+    font-weight: 900;
+    margin-bottom: 20px;
+    line-height: 1.2;
+    color: white; /* Force le blanc */
+    text-shadow: none; /* Pas d'ombre portée pour garder le style "plat" pastel */
+}
+
+/* Images décoratives dans la carte (croissant, yaourt...) */
+.current-task-card img {
+    max-height: 150px;
+    width: auto;
+    border: none;
+    box-shadow: none;
+    margin: 10px;
+    /* Un peu de transparence ou filtre blanc si tu veux l'effet "dessin blanc" */
+    /* filter: brightness(0) invert(1); <--- Décommente pour rendre les icones toutes blanches */
+}
+
+/* --- 5. ZONE VALIDATION (Droite) --- */
+.validation-zone {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end; /* En bas */
+    padding-bottom: 20px;
+}
+
+/* Le bouton rond rose avec le V */
+.btn-big-validate {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background-color: #fbc4cb; /* Rose pastel fond */
+    border: none;
+    color: white;
+    font-size: 4rem; /* Grand V */
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s;
+}
+
+.btn-big-validate:hover {
+    transform: scale(1.1);
+    background-color: #f9aab4; /* Rose un peu plus foncé au survol */
+}
+
+/* Optionnel : Le rond noir (placeholder photo/caméra) au dessus du bouton */
+.profile-placeholder {
+    width: 120px;
+    height: 120px;
+    background-color: black;
+    border-radius: 50%;
+    margin-bottom: -30px; /* Chevauchement léger */
+    z-index: 1; /* Derrière le bouton ou devant selon l'effet voulu */
+}
+
+/* Optionnel : Bouton Audio à gauche (invisible sur ton code HTML actuel mais présent sur l'image) */
+.audio-btn-placeholder {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background-color: #fbc4cb;
+    display: flex; 
+    align-items: center; justify-content: center;
+    color: white;
+    font-size: 2rem;
+    margin-right: 20px;
+}
+
+/* =================================================================
+   --- JEU DE MEMORY (STYLE SPÉCIFIQUE) ---
+   ================================================================= */
+
+/* --- Tableau des scores --- */
+.score-board {
+    display: flex;
+    justify-content: center;
+    gap: 50px;
+    margin-bottom: 30px;
+}
+
+.player-score {
+    background: white;
+    padding: 15px 30px;
+    border-radius: 15px;
+    font-size: 1.5rem;
+    font-weight: bold;
+    border: 4px solid #ddd;
+    opacity: 0.6;
+    transition: all 0.3s;
+    text-align: center;
+    box-shadow: var(--shadow-soft);
+}
+
+/* Le joueur actif est mis en avant (plus gros + coloré) */
+.player-score.active {
+    opacity: 1;
+    transform: scale(1.1);
+    border-color: var(--pink-primary);
+    color: var(--pink-primary);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+}
+
+/* --- La Grille de Jeu --- */
+
+.memory-grid {
+    display: grid;
+    /* --- LES LIGNES MAGIQUES (Remplacent grid-template-columns) --- */
+    grid-template-rows: repeat(3, 1fr); /* Force 3 lignes de taille égale */
+    grid-auto-flow: column;             /* Remplissage de haut en bas, puis vers la droite */
+    
+    /* On limite la hauteur globale pour que tout tienne sur l'écran */
+    height: 60vh;
+    justify-content: center; /* Centre la grille horizontalement */
+    
+    gap: 20px;
+    max-width: 90%;
+    margin: 0 auto;
+    perspective: 1000px;
+    padding-bottom: 50px;
+}
+
+/* --- La Carte (Conteneur) --- */
+.memory-card {
+    background-color: transparent;
+    aspect-ratio: 1 / 1; /* Carré parfait */
+    cursor: pointer;
+    position: relative; /* Pour positionner les faces */
+}
+
+/* --- L'intérieur de la carte (La pièce qui tourne) --- */
+.card-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    text-align: center;
+    transition: transform 0.6s; /* Durée de l'animation */
+    transform-style: preserve-3d; /* Garde la 3D pendant l'animation */
+    border-radius: 15px;
+    box-shadow: var(--shadow-soft);
+}
+
+/* QUAND ON CLIQUE (Classe ajoutée par JS) -> RETOURNEMENT */
+.memory-card.flipped .card-inner {
+    transform: rotateY(180deg);
+}
+
+/* QUAND C'EST GAGNÉ (Classe ajoutée par JS) -> Cadre vert */
+.memory-card.matched .card-inner {
+    transform: rotateY(180deg); /* Reste retourné */
+    box-shadow: 0 0 15px #4CAF50; /* Halo vert */
+}
+.memory-card.matched .card-back {
+    border: 4px solid #4CAF50;
+}
+
+/* --- Les Faces (Devant / Derrière) --- */
+.card-front, .card-back {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    -webkit-backface-visibility: hidden; /* Cache le dos de la face */
+    backface-visibility: hidden;
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+/* LE DOS DE LA CARTE (Ce qu'on voit avant de cliquer) */
+.card-front {
+    background-color: var(--pink-primary);
+    background-image: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 10px,
+        rgba(255,255,255,0.2) 10px,
+        rgba(255,255,255,0.2) 20px
+    );
+    color: white;
+    font-size: 4rem;
+    font-weight: bold;
+    border: 4px solid white;
+}
+
+/* LA FACE DE LA CARTE (L'image à trouver) */
+.card-back {
+    background-color: white;
+    transform: rotateY(180deg); /* Elle est déjà retournée au départ */
+    border: 4px solid #eee;
+}
+
+.card-back img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* L'image remplit la carte */
+    border: none; /* Pas de bordure sur l'image elle-même */
+    border-radius: 0;
+}
+
+/* =================================================================
+   --- JEU DE PUZZLE ---
+   ================================================================= */
+
+.puzzle-container {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    align-items: flex-start;
+    flex-wrap: wrap; /* Pour mobile */
+    margin-bottom: 50px;
+    width: 1200px;
+}
+
+/* Barre latérale (Modèle) */
+.puzzle-sidebar {
+    width: 250px;
+    text-align: center;
+    background: white;
+    padding: 20px;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-soft);
+}
+
+.model-frame img {
+    width: 240px;
+    height: 180px;
+    border: 3px solid var(--pink-primary);
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+/* Le Plateau de Jeu */
+.puzzle-board {
+    display: grid;
+    /* La taille est fixée à 600px car Python génère une image de 600px */
+    width: 800px;
+    height: 600px;
+    background-color: #333; /* Fond sombre pour voir les trous si besoin */
+    border: 5px solid #333;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    /* Le nombre de colonnes est géré par l'attribut style inline dans le HTML */
+}
+
+/* La Pièce */
+.puzzle-piece {
+    background-size: 100% 100%; /* L'image découpée remplit la case */
+    cursor: grab;
+    border: 1px solid rgba(255,255,255,0.3); /* Légère bordure pour guider */
+    transition: transform 0.2s, border 0.2s, box-shadow 0.2s;
+    box-sizing: border-box;
+}
+
+.puzzle-piece:active {
+    cursor: grabbing;
+}
+
+/* État sélectionné (Pour le mode Click to Swap) */
+.puzzle-piece.selected {
+    border: 4px solid #f44336; /* Rouge bien visible */
+    z-index: 10;
+    transform: scale(0.95); /* Petit effet de recul */
+    box-shadow: 0 0 15px rgba(0,0,0,0.5);
+}
+
+/* État victoire (bordure verte autour du plateau gérée par JS) */
+
+/* =================================================================
+   --- LECTEUR MUSIQUE (STYLE TV) ---
+   ================================================================= */
+
+.music-split-container {
+    display: flex;
+    gap: 40px;
+    height: 70vh; /* Prend une bonne partie de l'écran */
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+/* --- ZONE GAUCHE : ÉCRAN TV --- */
+.tv-wrapper {
+    flex: 3; /* Prend 3/4 de la largeur */
+    background-color: black;
+    border-radius: 40px; /* Gros arrondis comme sur l'image */
+    position: relative; /* Pour positionner les boutons par dessus */
+    overflow: hidden; /* Pour que la vidéo ne dépasse pas des arrondis */
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    border: 8px solid white; /* Optionnel : petit cadre blanc style iPad */
+}
+
+.tv-video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain; /* La vidéo s'affiche en entier sans être coupée */
+    background: black;
+}
+
+/* BOUTONS DE NAVIGATION (Incrustés) */
+.tv-nav-btn {
+    position: absolute;
+    bottom: 45%;
+    width: 20px;
+    height: 20px;
+    background-color: #ffffff; /* Bleu très pâle (style image) */
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    font-size: 1rem;
+    color: #fbc4cb; /* Flèche bleue plus foncée */
+    border: 4px solid white;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    transition: transform 0.2s, background-color 0.2s;
+    z-index: 10;
+}
+
+.tv-nav-btn:hover {
+    transform: scale(1.1);
+    background-color: white;
+}
+
+.tv-nav-btn.prev { left: 30px; }
+.tv-nav-btn.next { right: 30px; }
+
+
+/* --- ZONE DROITE : LISTE PLAYLISTS --- */
+.sidebar-playlist {
+    flex: 1; /* Prend 1/4 de la largeur */
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    overflow-y: auto; /* Scroll si trop de playlists */
+    padding-right: 10px; /* Espace pour la scrollbar */
+}
+
+.playlist-item {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    text-decoration: none;
+    background: rgba(255,255,255,0.5); /* Fond léger */
+    padding: 10px;
+    border-radius: 50px; /* Forme pilule */
+    transition: transform 0.2s, background-color 0.2s;
+}
+
+.playlist-item:hover, .playlist-item.active {
+    background: white;
+    transform: translateX(-10px); /* Petit mouvement vers la gauche */
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.playlist-thumb {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid white;
+    box-shadow: 0 4px 5px rgba(0,0,0,0.1);
+    flex-shrink: 0; /* Empêche l'image de s'écraser */
+}
+
+.playlist-name {
+    font-size: 1.2rem;
+    font-weight: 900;
+    color: #444;
+    text-transform: uppercase;
+}
+
+.playlist-item.active .playlist-thumb {
+    border-color: var(--pink-primary);
+}
+
+/* Bouton Plein Écran (Coin Haut Droit de la TV) */
+.tv-btn-fullscreen {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent */
+    color: white;
+    border: 2px solid white;
+    border-radius: 50%;
+    font-size: 1.5rem;
+    cursor: pointer;
+    z-index: 20;
+    transition: background-color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tv-btn-fullscreen:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+}
+
+/* =================================================================
+   --- VISIONNEUSE PHOTO & VIDÉO ---
+   ================================================================= */
+
+.media-viewer-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 20px;
+    min-height: 80vh;
+}
+
+/* Le cadre principal (Style TV/Tablette) */
+.media-frame {
+    width: 100%;
+    aspect-ratio: 16 / 9; /* Format écran large standard */
+    background-color: #000;
+    border-radius: 30px;
+    border: 8px solid white;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+/* L'image ou la vidéo à l'intérieur */
+.media-content {
+    max-width: 100%;
+    max-height: 100%;
+    width: 100%;
+    height: 100%;
+    object-fit: contain; /* L'image s'affiche en entier sans coupure */
+}
+
+/* Boutons de navigation flottants (comme sur la musique) */
+.nav-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 60px;
+    height: 60px;
+    background: rgba(255, 255, 255, 0.2);
+    border: 2px solid white;
+    border-radius: 50%;
+    color: white;
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    transition: all 0.2s;
+    z-index: 10;
+}
+.nav-arrow:hover {
+    background: white;
+    color: var(--pink-primary);
+    transform: translateY(-50%) scale(1.1);
+}
+.nav-arrow.prev { left: 20px; }
+.nav-arrow.next { right: 20px; }
+
+/* Barre de contrôle du diaporama (En bas) */
+.slideshow-controls {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    background: white;
+    padding: 10px 30px;
+    border-radius: 50px;
+    box-shadow: var(--shadow-soft);
+}
+
+.btn-toggle-slideshow {
+    background: var(--pink-primary);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background 0.2s;
+}
+.btn-toggle-slideshow.paused {
+    background: #9ca3af; /* Gris quand en pause */
+}
+
+/* Indicateur de chargement (Barre de progression visuelle optionnelle) */
+.timer-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 5px;
+    background: var(--pink-primary);
+    width: 0%;
+    transition: width linear;
+}

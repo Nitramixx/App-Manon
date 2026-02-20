@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestion des Histoires</title>
+    <style>
+        body { font-family: sans-serif; padding: 2rem; max-width: 900px; margin: 0 auto; background: #f4f4f4; }
+        .back-link { text-decoration: none; color: #555; display: inline-block; margin-bottom: 20px;}
+        
+        form { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .global-info { border-bottom: 2px dashed #ccc; padding-bottom: 20px; margin-bottom: 20px; }
+        
+        input[type="text"] { width: 100%; padding: 10px; margin-bottom: 10px; box-sizing: border-box; }
+        
+        /* Styles Tags */
+        .tags-selector { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; background: #f0f0f0; padding: 10px; border-radius: 5px; }
+        .tag-wrapper { display: inline-flex; align-items: center; background: white; padding: 5px 10px; border-radius: 15px; border: 1px solid #ddd; margin-right: 5px; }
+        .btn-delete-tag { background: none; border: none; color: #ff4444; font-weight: bold; margin-left: 8px; cursor: pointer; padding: 0 4px; border-radius: 50%; }
+        .new-tag-zone { display: flex; gap: 10px; margin-bottom: 15px; }
+
+        .chapter-block { background: #f9f9f9; border: 1px solid #ddd; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+        .chapter-title { font-weight: bold; color: #2196F3; margin-bottom: 10px; }
+        textarea { width: 100%; height: 100px; padding: 10px; margin-bottom: 10px;}
+        
+        .media-inputs { display: flex; gap: 20px; align-items: flex-start; margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee;}
+        .recorder-box { background: #e3f2fd; padding: 10px; border-radius: 5px; flex: 1; display: flex; flex-direction: column; gap: 5px; }
+        .rec-controls { display: flex; gap: 5px; align-items: center;}
+        
+        .btn-rec { background: #f44336; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+        .btn-stop { background: #555; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+        .btn-add { background: #4CAF50; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 4px; }
+        .btn-save { background: #2196F3; color: white; border: none; padding: 15px 30px; cursor: pointer; border-radius: 4px; font-size: 1.1rem; width: 100%; margin-top: 20px;}
+        
+        /* TABLEAU HISTOIRES */
+        .stories-table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .stories-table th, .stories-table td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
+        .stories-table th { background: #eee; }
+        .btn-edit { background: #ffc107; color: #333; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; text-decoration: none; font-size: 0.9rem; }
+        .btn-del { background: #ff4444; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.9rem; }
+        
+        .file-status { font-size: 0.8rem; color: #2e7d32; font-style: italic; margin-top: 5px; }
+    </style>
+</head>
+<body>
+
+    <a href="/admin" class="back-link">← Retour Admin</a>
+    <h1 id="pageTitle">Nouvelle Histoire</h1>
+
+    <form id="storyForm">
+        <input type="hidden" name="story_id" id="storyId">
+
+        <div class="global-info">
+            <label><strong>1. Titre de l'histoire :</strong></label>
+            <input type="text" name="title" id="storyTitle" required placeholder="Ex: La promenade en forêt">
+            
+            <label><strong>2. Image de couverture (Globale) :</strong></label><br>
+            <div id="currentCoverInfo" class="file-status" style="display:none; margin-bottom:5px;">Image actuelle conservée. Upload pour changer.</div>
+            <input type="file" name="story_cover" id="storyCover" accept="image/*" style="margin-bottom: 15px;">
+            <br>
+
+            <label><strong>3. Catégories (Thèmes) :</strong></label>
+            <div class="tags-selector" id="existingTags">
+                {% for tag in available_tags %}
+                <span class="tag-wrapper" id="tag-block-{{ tag }}">
+                    <label style="cursor: pointer;">
+                        <input type="checkbox" name="selected_tags" value="{{ tag }}" class="tag-check"> {{ tag }}
+                    </label>
+                    <button type="button" class="btn-delete-tag" onclick="deleteTag('{{ tag }}')">×</button>
+                </span>
+                {% endfor %}
+            </div>
+            
+            <div class="new-tag-zone" style="background: #e8f5e9; padding: 15px; border-radius: 8px; border: 1px solid #c8e6c9; align-items: flex-end;">
+                <div style="flex-grow: 1;">
+                    <label style="font-size: 0.9rem; color: #2e7d32;">Nouveau Thème :</label>
+                    <input type="text" id="newTagName" placeholder="Ex: Forêt" style="margin-bottom: 5px;">
+                </div>
+                <div style="flex-grow: 1;">
+                    <label style="font-size: 0.9rem; color: #2e7d32;">Image du thème :</label>
+                    <input type="file" id="newTagImage" accept="image/*" style="background: white;">
+                </div>
+                <button type="button" class="btn-stop" onclick="createTheme()" style="background: #4CAF50; height: 40px;">+ CRÉER</button>
+            </div>
+        </div>
+
+        <h3>4. Chapitres (Texte + Audio)</h3>
+        <div id="chaptersContainer"></div>
+
+        <button type="button" class="btn-add" onclick="addChapterUI()">+ Ajouter un chapitre</button>
+        
+        <div style="display:flex; gap:10px; margin-top: 20px;">
+            <button type="submit" class="btn-save" id="btnSubmit">ENREGISTRER L'HISTOIRE</button>
+            <button type="button" id="btnCancel" onclick="resetForm()" style="display:none; background:#777; color:white; border:none; padding:15px; border-radius:4px; cursor:pointer;">ANNULER MODIF</button>
+        </div>
+    </form>
+
+    <hr style="margin: 40px 0;">
+
+    <h2>Histoires existantes</h2>
+    <table class="stories-table">
+        <thead>
+            <tr>
+                <th>Titre</th>
+                <th>Tags</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for s in stories %}
+            <tr id="row-{{ s.id }}">
+                <td><strong>{{ s.title }}</strong><br><small style="color:#666">{{ s.chapters|length }} chapitres</small></td>
+                <td>
+                    {% for t in s.tags %}
+                        <span style="background:#ddd; padding:2px 5px; border-radius:4px; font-size:0.8em;">{{ t }}</span>
+                    {% endfor %}
+                </td>
+                <td>
+                    <button class="btn-edit" onclick='loadStory({{ s|tojson }})'>✏️ Modifier</button>
+                    <button class="btn-del" onclick="deleteStory({{ s.id }})">🗑️</button>
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="3" style="text-align:center;">Aucune histoire pour le moment.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+<hr style="margin: 40px 0;">
+
+    <h2 style="color: #2e7d32;">Gestion des Thèmes (Tags & Ambiances)</h2>
+    
+    <table class="stories-table">
+        <thead>
+            <tr>
+                <th>Image</th>
+                <th>Thème</th>
+                <th>Musique d'ambiance</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for theme in themes %}
+            <tr id="theme-row-{{ theme.name|replace(' ', '_') }}">
+                <td>
+                    <img src="{{ url_for('static', filename='uploads/themes/' + theme.img) }}" 
+                         style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid #ddd;">
+                </td>
+                <td>
+                    <strong>{{ theme.name }}</strong>
+                </td>
+                <td>
+                    {% if theme.music %}
+                        🎵 {{ theme.music }}
+                    {% else %}
+                        <span style="color:#ccc; font-style:italic;">Aucune</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <button class="btn-edit" onclick='openThemeEdit({{ theme|tojson }})'>⚙️ Configurer</button>
+                    <button class="btn-del" onclick="deleteTheme('{{ theme.name }}')">🗑️</button>
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4" style="text-align:center;">Aucun thème configuré.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div id="themeModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; justify-content:center; align-items:center;">
+        <div style="background:white; padding:30px; border-radius:10px; width:400px; box-shadow:0 5px 15px rgba(0,0,0,0.3);">
+            <h3 style="margin-top:0;">Configurer le thème</h3>
+            
+            <input type="hidden" id="editOldName">
+            
+            <label><strong>Nom du tag :</strong></label>
+            <input type="text" id="editThemeName" style="margin-bottom:15px;">
+            <p style="font-size:0.8rem; color:#f44336; margin-top:-10px; margin-bottom:15px;">⚠️ Attention : changer le nom mettra à jour toutes les histoires associées.</p>
+
+            <label><strong>Changer l'image :</strong></label>
+            <input type="file" id="editThemeImage" accept="image/*" style="margin-bottom:15px;">
+
+            <label><strong>Musique d'ambiance :</strong></label>
+            <select id="editThemeMusic" style="width:100%; padding:10px; margin-bottom:20px; border-radius:4px; border:1px solid #ccc;">
+                <option value="">-- Aucune musique --</option>
+                {% for m in musics %}
+                    <option value="{{ m.title }}">{{ m.title }}</option>
+                {% endfor %}
+            </select>
+
+            <div style="text-align:right; display:flex; gap:10px; justify-content:flex-end;">
+                <button type="button" onclick="closeThemeModal()" style="padding:10px 20px; background:#ccc; border:none; border-radius:4px; cursor:pointer;">Annuler</button>
+                <button type="button" onclick="saveThemeChanges()" style="padding:10px 20px; background:#2e7d32; color:white; border:none; border-radius:4px; cursor:pointer;">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- SCRIPTS GESTION THÈMES ---
+
+        function openThemeEdit(theme) {
+            document.getElementById('editOldName').value = theme.name;
+            document.getElementById('editThemeName').value = theme.name;
+            document.getElementById('editThemeImage').value = ''; // Reset file input
+            
+            // Sélectionner la bonne musique
+            const musicSelect = document.getElementById('editThemeMusic');
+            musicSelect.value = theme.music || "";
+
+            document.getElementById('themeModal').style.display = 'flex';
+        }
+
+        function closeThemeModal() {
+            document.getElementById('themeModal').style.display = 'none';
+        }
+
+        function saveThemeChanges() {
+            const oldName = document.getElementById('editOldName').value;
+            const newName = document.getElementById('editThemeName').value.trim();
+            const musicFile = document.getElementById('editThemeMusic').value;
+            const imageFile = document.getElementById('editThemeImage').files[0];
+
+            if(!newName) return alert("Le nom ne peut pas être vide.");
+
+            const formData = new FormData();
+            formData.append('category', 'story');
+            formData.append('old_name', oldName);
+            formData.append('new_name', newName);
+            formData.append('music_file', musicFile);
+            if(imageFile) formData.append('new_image', imageFile);
+
+            fetch('/api/update_theme', { method: 'POST', body: formData })
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) {
+                    alert("Thème mis à jour !");
+                    location.reload();
+                } else {
+                    alert("Erreur: " + data.error);
+                }
+            })
+            .catch(err => alert("Erreur réseau"));
+        }
+
+        function deleteTheme(tagName) {
+            if(!confirm("Supprimer le thème '" + tagName + "' ?\nCela retirera ce tag de toutes les histoires.")) return;
+
+            fetch('/api/delete_theme', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ category: 'story', tag_name: tagName })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) location.reload();
+                else alert("Erreur: " + data.error);
+            });
+        }
+
+        let chapterCount = 0;
+        let audioBlobs = {}; 
+
+        // --- GESTION DU FORMULAIRE (MODIF / AJOUT) ---
+
+        function loadStory(story) {
+            // 1. Mise à jour de l'état visuel (Mode Edition)
+            document.getElementById('pageTitle').innerText = "Modifier : " + story.title;
+            document.getElementById('storyId').value = story.id;
+            document.getElementById('storyTitle').value = story.title;
+            document.getElementById('btnSubmit').innerText = "METTRE À JOUR";
+            document.getElementById('btnCancel').style.display = 'block';
+            
+            // Image de couverture : reset input, afficher message
+            document.getElementById('storyCover').value = '';
+            document.getElementById('currentCoverInfo').style.display = 'block';
+            document.getElementById('currentCoverInfo').innerText = "Couverture actuelle : " + (story.cover || 'Aucune');
+
+            // 2. Cocher les tags
+            document.querySelectorAll('.tag-check').forEach(cb => {
+                cb.checked = story.tags.includes(cb.value);
+            });
+
+            // 3. Charger les chapitres
+            const container = document.getElementById('chaptersContainer');
+            container.innerHTML = ''; // Vider
+            chapterCount = 0;
+            audioBlobs = {}; // Reset enregistrements temporaires
+
+            story.chapters.forEach((chap, idx) => {
+                addChapterUI(chap.text, chap.audio);
+            });
+
+            // Scroll vers le haut
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function resetForm() {
+            document.getElementById('storyForm').reset();
+            document.getElementById('storyId').value = '';
+            document.getElementById('pageTitle').innerText = "Nouvelle Histoire";
+            document.getElementById('btnSubmit').innerText = "ENREGISTRER L'HISTOIRE";
+            document.getElementById('btnCancel').style.display = 'none';
+            document.getElementById('currentCoverInfo').style.display = 'none';
+            
+            document.getElementById('chaptersContainer').innerHTML = '';
+            chapterCount = 0;
+            audioBlobs = {};
+            
+            // Remettre un chapitre vide par défaut
+            addChapterUI();
+        }
+
+        function addChapterUI(text = "", audioFilename = null) {
+            const container = document.getElementById('chaptersContainer');
+            const idx = chapterCount;
+            
+            const div = document.createElement('div');
+            div.className = 'chapter-block';
+            
+            let audioStatus = "";
+            if (audioFilename) {
+                audioStatus = `<div style="font-size:0.8rem; color:#2e7d32; margin-bottom:5px;">Audio actuel : ${audioFilename} (Laisser vide pour garder)</div>`;
+            }
+
+            div.innerHTML = `
+                <div class="chapter-title">Chapitre ${idx + 1}</div>
+                <textarea name="chapter_text_${idx}" required placeholder="Texte du chapitre...">${text}</textarea>
+                
+                <div class="media-inputs">
+                    <div class="recorder-box">
+                        <label>Audio (Microphone) :</label>
+                        <div class="rec-controls">
+                            <button type="button" class="btn-rec" onclick="startRecording(${idx}, this)">🔴 Rec</button>
+                            <button type="button" class="btn-stop" onclick="stopRecording(${idx})" disabled>⏹ Stop</button>
+                            <span id="indicator_${idx}" class="recording-indicator">Enregistrement...</span>
+                        </div>
+                        <audio id="audioPreview_${idx}" controls style="width:100%; margin-top:5px; display:none;"></audio>
+                        
+                        <div style="font-size: 0.8rem; margin-top: 10px; color: #666; border-top:1px solid #ddd; padding-top:5px;">
+                            ${audioStatus}
+                            Ou upload fichier : <input type="file" name="chapter_audio_${idx}" accept="audio/*">
+                        </div>
+                    </div>
+                </div>
+            `;
+            container.appendChild(div);
+            chapterCount++;
+        }
+
+        // --- SUPPRESSION ---
+        function deleteStory(id) {
+            if(!confirm("Êtes-vous sûr de vouloir supprimer cette histoire définitivement ?")) return;
+
+            fetch('/api/delete_story', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({id: id})
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) {
+                    document.getElementById('row-' + id).remove();
+                } else {
+                    alert("Erreur: " + data.error);
+                }
+            });
+        }
+
+        // --- CRÉATION DE THÈME (Gardé de ta version précédente) ---
+        function createTheme() {
+            const nameInput = document.getElementById('newTagName');
+            const imgInput = document.getElementById('newTagImage');
+            const name = nameInput.value.trim();
+            const file = imgInput.files[0];
+
+            if(!name || !file) { alert("Nom et Image requis."); return; }
+
+            const formData = new FormData();
+            formData.append('tag_name', name);
+            formData.append('tag_image', file);
+
+            fetch('/api/create_story_theme', { method: 'POST', body: formData })
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) {
+                    addCheckboxVisual(data.tag);
+                    nameInput.value = ''; imgInput.value = '';
+                    alert("Thème ajouté !");
+                } else { alert("Erreur: " + data.error); }
+            });
+        }
+
+        function addCheckboxVisual(tagName) {
+            const container = document.getElementById('existingTags');
+            if(document.querySelector(`input[value="${tagName}"]`)) return;
+            const span = document.createElement('span');
+            span.className = 'tag-wrapper';
+            span.innerHTML = `<label style="cursor: pointer;"><input type="checkbox" name="selected_tags" value="${tagName}" checked class="tag-check"> ${tagName}</label>`;
+            container.appendChild(span);
+        }
+
+        // --- ENREGISTREMENT MICRO (Gardé identique) ---
+        let mediaRecorders = {}; 
+        async function startRecording(idx, btn) {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const mediaRecorder = new MediaRecorder(stream);
+                mediaRecorders[idx] = mediaRecorder;
+                audioBlobs[idx] = []; // Reset chunks
+                mediaRecorder.ondataavailable = event => audioBlobs[idx].push(event.data); // Attention structure
+                // On stocke les chunks dans une variable temporaire, pas directement audioBlobs[idx] qui est le Blob final dans ta version précédente
+                // Correction pour ta logique :
+                // audioChunks[idx] = []; ... voir ta version originale.
+                // Je remets ta logique exacte ici pour ne pas casser :
+                
+                let chunks = [];
+                mediaRecorder.ondataavailable = e => chunks.push(e.data);
+                
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(chunks, { type: 'audio/mp3' });
+                    audioBlobs[idx] = blob; // On stocke le Blob final pour l'envoi
+                    const audioUrl = URL.createObjectURL(blob);
+                    const audioEl = document.getElementById(`audioPreview_${idx}`);
+                    audioEl.src = audioUrl;
+                    audioEl.style.display = 'block';
+                };
+                mediaRecorder.start();
+                document.getElementById(`indicator_${idx}`).style.display = 'inline';
+                btn.disabled = true;
+                btn.nextElementSibling.disabled = false;
+            } catch (err) { alert("Erreur micro: " + err); }
+        }
+
+        function stopRecording(idx) {
+            if (mediaRecorders[idx]) {
+                mediaRecorders[idx].stop();
+                document.getElementById(`indicator_${idx}`).style.display = 'none';
+                const stopBtn = document.querySelector(`button[onclick="stopRecording(${idx})"]`);
+                stopBtn.disabled = true;
+                stopBtn.previousElementSibling.disabled = false;
+            }
+        }
+
+        // --- SUBMIT DU FORMULAIRE ---
+        document.getElementById('storyForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            
+            // Ajout des blobs audio enregistrés
+            for (let idx in audioBlobs) {
+                // S'il y a un blob et pas de fichier déjà sélectionné dans l'input file
+                if (audioBlobs[idx] && !formData.get(`chapter_audio_${idx}`).name) {
+                    formData.set(`chapter_audio_${idx}`, audioBlobs[idx], "mic_recording.mp3");
+                }
+            }
+            
+            fetch('/api/add_story_complex', { method: 'POST', body: formData })
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) {
+                    alert("Histoire sauvegardée !");
+                    window.location.reload(); // On recharge pour voir la liste à jour
+                } else {
+                    alert("Erreur: " + data.error);
+                }
+            })
+            .catch(err => alert("Erreur réseau"));
+        });
+
+        // Init
+        addChapterUI(); 
+    </script>
+</body>
+</html>

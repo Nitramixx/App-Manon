@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+
+{% block title %}Jeu de Mémoire 🧠{% endblock %}
+
+{% block nav %}
+    MEMORY
+{% endblock %}
+
+{% block content %}
+
+<div class="score-board" id="media-focus">
+    <div id="p1-score" class="player-score p1 active">
+        {% if num_players == 2 %}JOUEUR 1{% else %}MANON{% endif %}
+        <br>
+        <span id="score-1">0</span> Paires
+    </div>
+    
+    {% if num_players == 2 %}
+    <div id="p2-score" class="player-score p2">
+        JOUEUR 2
+        <br>
+        <span id="score-2">0</span> Paires
+    </div>
+    {% endif %}
+</div>
+
+<div class="memory-grid">
+    {% for card in cards %}
+    <div class="memory-card" data-id="{{ card.id }}" onclick="flipCard(this)">
+        <div class="card-inner">
+            <div class="card-front">
+                ?
+            </div>
+            <div class="card-back">
+                <img src="{{ url_for('static', filename=card.path.replace('static/', '')) }}" alt="Souvenir">
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<div id="win-message" style="display: none; text-align: center; margin-top: 30px;">
+    <h2 style="color: #4CAF50; font-size: 3rem;">BRAVO ! C'EST GAGNÉ ! 🎉</h2>
+    <a href="{{ url_for('memory_menu') }}" class="btn-next">REJOUER</a>
+</div>
+
+<script>
+    let hasFlippedCard = false;
+    let lockBoard = false; // Empêche de cliquer si 2 cartes sont déjà retournées
+    let firstCard, secondCard;
+    
+    // Gestion multi-joueurs
+    const numPlayers = {{ num_players }};
+    let currentPlayer = 1;
+    let scores = {1: 0, 2: 0};
+    let totalPairsFound = 0;
+    const totalPairsToFind = {{ cards|length // 2 }}; // Division entière Python injectée
+
+    function flipCard(cardElement) {
+        if (lockBoard) return;
+        if (cardElement === firstCard) return; // Empêche de cliquer 2 fois sur la même
+
+        // Ajoute la classe CSS pour l'animation
+        cardElement.classList.add('flipped');
+
+        if (!hasFlippedCard) {
+            // Premier clic
+            hasFlippedCard = true;
+            firstCard = cardElement;
+            return;
+        }
+
+        // Deuxième clic
+        secondCard = cardElement;
+        checkForMatch();
+    }
+
+    function checkForMatch() {
+        // On compare les IDs (gérés par le serveur Python)
+        let isMatch = firstCard.dataset.id === secondCard.dataset.id;
+
+        if (isMatch) {
+            disableCards();
+            updateScore();
+        } else {
+            unflipCards();
+        }
+    }
+
+    function disableCards() {
+        // C'est gagné pour cette paire
+        firstCard.classList.add('matched');
+        secondCard.classList.add('matched');
+        
+        // On enlève le clic
+        firstCard.removeAttribute('onclick');
+        secondCard.removeAttribute('onclick');
+
+        resetBoard();
+    }
+
+    function unflipCards() {
+        lockBoard = true; // On bloque le plateau le temps de voir l'erreur
+
+        setTimeout(() => {
+            firstCard.classList.remove('flipped');
+            secondCard.classList.remove('flipped');
+
+            resetBoard();
+            switchPlayer(); // Si erreur, on change de joueur
+        }, 1500); // Temps d'affichage (1.5 secondes)
+    }
+
+    function updateScore() {
+        scores[currentPlayer]++;
+        document.getElementById(`score-${currentPlayer}`).innerText = scores[currentPlayer];
+        
+        totalPairsFound++;
+        
+        // Si c'est gagné
+        if (totalPairsFound === totalPairsToFind) {
+            setTimeout(() => {
+                document.getElementById('win-message').style.display = 'block';
+                // Petite animation de confettis ou scroll en bas
+                window.scrollTo(0, document.body.scrollHeight);
+            }, 500);
+        }
+        
+        // Note: Si on trouve une paire, ON GARDE LA MAIN (règle classique du memory)
+        // Donc pas de switchPlayer() ici.
+    }
+
+    function switchPlayer() {
+        if (numPlayers === 1) return; // Pas de changement si solo
+
+        // Changement de joueur
+        currentPlayer = currentPlayer === 1 ? 2 : 1;
+        
+        // Mise à jour visuelle
+        document.getElementById('p1-score').classList.toggle('active');
+        document.getElementById('p2-score').classList.toggle('active');
+    }
+
+    function resetBoard() {
+        [hasFlippedCard, lockBoard] = [false, false];
+        [firstCard, secondCard] = [null, null];
+    }
+</script>
+
+{% endblock %}

@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestion {{ category|capitalize }}</title>
+    <style>
+        body { font-family: 'Lato', sans-serif; padding: 2rem; padding-bottom: 100px; max-width: 1200px; margin: 0 auto; background: #f4f4f4;}
+        h1, h2 { color: #333; }
+        .back-link { text-decoration: none; color: #555; display: inline-block; margin-bottom: 20px; font-weight: bold;}
+        .btn { padding: 8px 15px; border-radius: 4px; border: none; cursor: pointer; font-weight: bold; font-size: 0.9rem;}
+        .btn-green { background: #4CAF50; color: white; }
+        .btn-blue { background: #2196F3; color: white; }
+        .btn-red { background: #f44336; color: white; }
+        .btn-yellow { background: #ffc107; color: #333; }
+        .btn-orange { background: #ff9800; color: white; } 
+        
+        input[type="text"], input[type="file"], select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 100%; box-sizing: border-box; }
+
+        .theme-section { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 30px; }
+        .creation-bar { display: flex; gap: 15px; align-items: flex-end; background: #e8f5e9; padding: 15px; border-radius: 8px; border: 1px solid #c8e6c9; }
+        .input-col { flex: 1; display: flex; flex-direction: column; gap: 5px; }
+        .input-col label { font-size: 0.8rem; font-weight: bold; color: #2e7d32; }
+
+        .theme-table, .file-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .theme-table th, .theme-table td, .file-table td { text-align: left; padding: 10px; border-bottom: 1px solid #eee; vertical-align: middle; }
+        .file-table th { background: #eee; text-align: left; padding: 12px; }
+        .file-table tr:hover { background-color: #f9f9f9; }
+        .file-table tr.selected { background-color: #e3f2fd; }
+        
+        .thumb-preview-container { width: 80px; height: 60px; background: #eee; border-radius: 6px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+        .tag-badge { display: inline-block; background: #e0f2f1; color: #00695c; padding: 2px 8px; border-radius: 12px; font-size: 0.8rem; margin: 2px; border: 1px solid #b2dfdb; }
+
+        .bulk-actions-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: #333; color: white; padding: 15px 30px; display: none; align-items: center; justify-content: space-between; z-index: 2000; box-sizing: border-box; }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 3000; justify-content: center; align-items: center; }
+        .modal-box { background: white; padding: 25px; border-radius: 8px; width: 90%; max-width: 500px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+        .tags-selection-area { display: flex; flex-wrap: wrap; gap: 8px; margin: 15px 0; max-height: 300px; overflow-y: auto; background: #fafafa; padding: 10px; border: 1px solid #eee; }
+        .tag-checkbox-label { display: flex; align-items: center; gap: 6px; background: white; padding: 6px 12px; border: 1px solid #ddd; border-radius: 20px; cursor: pointer; user-select: none; }
+        .tag-checkbox-label input { accent-color: #2196F3; transform: scale(1.2); }
+    </style>
+</head>
+<body>
+
+    <a href="/admin" class="back-link">← Retour Admin</a>
+    <h1>Gestion : {{ category|capitalize }}</h1>
+
+    <div class="theme-section">
+        <h2 style="color: #2e7d32; margin-top:0;">1. Thèmes & Ambiances</h2>
+        
+        <div class="creation-bar">
+            <div class="input-col">
+                <label>Nom du Thème :</label>
+                <input type="text" id="newTagName" placeholder="Ex: Vacances">
+            </div>
+            <div class="input-col">
+                <label>Musique d'ambiance :</label>
+                <select id="newTagMusic" style="background: white;">
+                    <option value="">-- Aucune --</option>
+                    {% for m in musics %}
+                        <option value="{{ m.title }}">{{ m.title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="input-col">
+                <label>Image de couverture :</label>
+                <input type="file" id="newTagImage" accept="image/*" style="background: white;">
+            </div>
+            <button class="btn btn-green" onclick="createTheme()" style="height: 38px;">+ CRÉER</button>
+        </div>
+
+        <table class="theme-table">
+            <thead>
+                <tr>
+                    <th>Img</th>
+                    <th>Nom</th>
+                    <th>Musique</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for theme in themes %}
+                <tr>
+                    <td><img src="{{ url_for('static', filename='uploads/themes/' + theme.img) }}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;"></td>
+                    <td><strong>{{ theme.name }}</strong></td>
+                    <td>
+                        {% if theme.music %} 🎵 {{ theme.music }} {% else %} <span style="color:#ccc;">-</span> {% endif %}
+                    </td>
+                    <td>
+                        <button class="btn btn-yellow" onclick='openThemeEdit({{ theme|tojson }})'>⚙️</button>
+                        <button class="btn btn-red" onclick="deleteTheme('{{ theme.name }}')">🗑️</button>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="4" style="text-align:center">Aucun thème.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="theme-section" style="border: 2px solid #ff9800;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h2 style="margin:0; color: #ff9800;">📥 Boîte de réception ({{ inbox_files|length }} nouveaux)</h2>
+            <span style="font-size: 0.9rem; color: #666;">Dossier : <code>static/inbox_{{category}}/</code></span>
+        </div>
+        
+        {% if inbox_files %}
+        <table class="file-table" id="inboxTable">
+            <thead>
+                <tr>
+                    <th style="width: 40px;"><input type="checkbox" id="selectAllInbox" onclick="toggleSelectAll('inbox')"></th>
+                    <th style="width: 80px;">Aperçu</th>
+                    <th>Nom du fichier en attente</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for filename in inbox_files %}
+                <tr>
+                    <td style="text-align:center;">
+                        <input type="checkbox" class="inbox-check file-check" value="{{ filename }}" onchange="updateBulkBar('inbox')">
+                    </td>
+                    <td style="padding: 5px;">
+                        <div class="thumb-preview-container">
+                            {% if category == 'photo' %}
+                                <img src="{{ url_for('static', filename='inbox_' + category + '/' + filename) }}" style="width: 100%; height: 100%; object-fit: cover;">
+                            {% else %}
+                                <video src="{{ url_for('static', filename='inbox_' + category + '/' + filename) }}" style="width: 100%; height: 100%; object-fit: cover;" muted loop onmouseover="this.play()" onmouseout="this.pause()"></video>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td><strong>{{ filename }}</strong></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p style="text-align:center; padding: 20px; color:#888;">La boîte de réception est vide. Ajoutez des fichiers dans le dossier <code>static/inbox_{{category}}</code>.</p>
+        {% endif %}
+    </div>
+
+    <div class="theme-section">
+        <div style="padding-bottom: 15px; border-bottom: 1px solid #ddd; display:flex; justify-content:space-between; align-items:center;">
+            <h2 style="margin:0; color: #1976D2;">📚 Bibliothèque ({{ files|length }} fichiers)</h2>
+            <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="🔍 Rechercher..." style="width: 250px;">
+        </div>
+
+        <table class="file-table" id="fileTable">
+            <thead>
+                <tr>
+                    <th style="width: 40px;"><input type="checkbox" id="selectAllLib" onclick="toggleSelectAll('lib')"></th>
+                    <th style="width: 80px;">Aperçu</th>
+                    <th>Fichier</th>
+                    <th>Tags</th>
+                    <th style="width: 80px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for file in files %}
+                <tr id="row-{{ file.id }}">
+                    <td style="text-align:center;">
+                        <input type="checkbox" class="lib-check file-check" value="{{ file.id }}" onchange="updateBulkBar('lib')">
+                    </td>
+                    <td style="padding: 5px;">
+                        <div class="thumb-preview-container">
+                            {% if category == 'photo' %}
+                                <img src="{{ url_for('static', filename=file.path.replace('static/', '')) }}" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy">
+                            {% else %}
+                                <video src="{{ url_for('static', filename=file.path.replace('static/', '')) }}" style="width: 100%; height: 100%; object-fit: cover; cursor: pointer;" muted loop onmouseover="this.play();" onmouseout="this.pause();"></video>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td>
+                        {{ file.title }}<br><small style="color:#888;">{{ file.date }}</small>
+                    </td>
+                    <td>
+                        <div style="display:flex; flex-wrap:wrap; gap:5px;">
+                            {% for tag in file.tags %} <span class="tag-badge">{{ tag }}</span> {% endfor %}
+                        </div>
+                    </td>
+                    <td>
+                        <div style="display:flex; gap:5px;">
+                            <button class="btn btn-blue" style="padding:5px 10px;" onclick='openBulkModal("lib", [{{ file.id }}])' title="Modifier les tags">✏️</button>
+                            <button class="btn btn-red" style="padding:5px 10px;" onclick='deleteMedia({{ file.id }})' title="Supprimer le fichier">🗑️</button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="bulk-actions-bar" id="bulkBar">
+        <div style="font-size:1.1rem; font-weight:bold;" id="bulkCount">0 sélectionné(s)</div>
+        <div>
+            <button class="btn btn-yellow" onclick="unselectAll()">Annuler sélection</button>
+            <button class="btn btn-orange" id="btnActionInbox" style="display:none;" onclick="openBulkModal('inbox', getSelected('inbox'))">📥 Tagger et Enregistrer</button>
+            <button class="btn btn-blue" id="btnActionLib" style="display:none;" onclick="openBulkModal('lib', getSelected('lib'))">🏷️ Modifier Tags</button>
+        </div>
+    </div>
+
+    <div id="themeModal" class="modal-overlay">
+        <div class="modal-box">
+            <h3>Configurer le Thème</h3>
+            <input type="hidden" id="editThemeOldName">
+            <label>Nom :</label><input type="text" id="editThemeName" style="width:100%; margin-bottom:10px;">
+            <label>Musique :</label>
+            <select id="editThemeMusic" style="width:100%; margin-bottom:10px;">
+                <option value="">-- Aucune --</option>
+                {% for m in musics %} <option value="{{ m.title }}">{{ m.title }}</option> {% endfor %}
+            </select>
+            <label>Changer Image :</label><input type="file" id="editThemeImage" accept="image/*" style="width:100%; margin-bottom:20px;">
+            <div style="text-align:right;">
+                <button class="btn" onclick="document.getElementById('themeModal').style.display='none'">Annuler</button>
+                <button class="btn btn-green" onclick="saveThemeChanges()">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="fileModal" class="modal-overlay">
+        <div class="modal-box">
+            <h3 id="modalTitle">Modifier les tags</h3>
+            
+            <input type="hidden" id="modalContext">
+            <input type="hidden" id="targetData">
+            
+            <div id="modeSelector" style="background: #e3f2fd; padding: 10px; border-radius: 4px; margin-bottom: 10px;">
+                <label><input type="radio" name="tagMode" value="add" checked> <strong>AJOUTER</strong> aux existants</label><br>
+                <label><input type="radio" name="tagMode" value="replace"> <strong>REMPLACER</strong> tout</label>
+            </div>
+
+            <div class="tags-selection-area">
+                {% for tag in available_tags %}
+                <label class="tag-checkbox-label">
+                    <input type="checkbox" value="{{ tag }}" class="modal-tag-check"> {{ tag }}
+                </label>
+                {% endfor %}
+            </div>
+            
+            <div style="text-align:right; margin-top:15px;">
+                <button class="btn" onclick="document.getElementById('fileModal').style.display='none'">Fermer</button>
+                <button class="btn btn-green" onclick="submitModal()">Valider</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const CURRENT_CATEGORY = "{{ category }}";
+
+        // --- 1. THÈMES ---
+        function createTheme() {
+            const name = document.getElementById('newTagName').value.trim();
+            const music = document.getElementById('newTagMusic').value;
+            const file = document.getElementById('newTagImage').files[0];
+
+            if(!name || !file) return alert("Nom et Image requis.");
+
+            const fd = new FormData();
+            fd.append('category', CURRENT_CATEGORY);
+            fd.append('tag_name', name);
+            fd.append('music_file', music);
+            fd.append('tag_image', file);
+
+            fetch('/api/create_theme', {method:'POST', body:fd})
+                .then(r=>r.json()).then(d => {
+                    if(d.success) location.reload();
+                    else alert(d.error);
+                });
+        }
+
+        function openThemeEdit(theme) {
+            document.getElementById('editThemeOldName').value = theme.name;
+            document.getElementById('editThemeName').value = theme.name;
+            document.getElementById('editThemeMusic').value = theme.music || "";
+            document.getElementById('themeModal').style.display = 'flex';
+        }
+        
+        function saveThemeChanges() {
+            const oldName = document.getElementById('editThemeOldName').value;
+            const newName = document.getElementById('editThemeName').value.trim();
+            const music = document.getElementById('editThemeMusic').value;
+            const file = document.getElementById('editThemeImage').files[0];
+            
+            const fd = new FormData();
+            fd.append('category', CURRENT_CATEGORY);
+            fd.append('old_name', oldName);
+            fd.append('new_name', newName);
+            fd.append('music_file', music);
+            if(file) fd.append('new_image', file);
+
+            fetch('/api/update_theme', {method:'POST', body:fd})
+                .then(r=>r.json()).then(d => { if(d.success) location.reload(); else alert(d.error); });
+        }
+
+        function deleteTheme(name) {
+            if(!confirm("Supprimer ce thème ?")) return;
+            fetch('/api/delete_theme', {
+                method:'POST', 
+                headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({category:CURRENT_CATEGORY, tag_name:name})
+            }).then(r=>r.json()).then(d=>{ if(d.success) location.reload(); });
+        }
+
+        // --- 2. SÉLECTIONS INBOX & BIBLIOTHÈQUE ---
+        function toggleSelectAll(context) {
+            const isChecked = document.getElementById(context === 'inbox' ? 'selectAllInbox' : 'selectAllLib').checked;
+            document.querySelectorAll(`.${context}-check`).forEach(c => {
+                c.checked = isChecked;
+                highlightRow(c);
+            });
+            updateBulkBar(context);
+        }
+
+        function highlightRow(checkbox) {
+            const row = checkbox.closest('tr');
+            if(checkbox.checked) row.classList.add('selected');
+            else row.classList.remove('selected');
+        }
+
+        function updateBulkBar(context) {
+            if(!context) return;
+            const otherContext = context === 'inbox' ? 'lib' : 'inbox';
+            document.querySelectorAll(`.${otherContext}-check`).forEach(c => { c.checked = false; highlightRow(c); });
+            const selectAllOther = document.getElementById(otherContext === 'inbox' ? 'selectAllInbox' : 'selectAllLib');
+            if (selectAllOther) selectAllOther.checked = false;
+
+            const count = document.querySelectorAll(`.${context}-check:checked`).length;
+            const bar = document.getElementById('bulkBar');
+            
+            if (count > 0) {
+                bar.style.display = 'flex';
+                document.getElementById('bulkCount').innerText = count + " fichier(s)";
+                document.getElementById('btnActionInbox').style.display = context === 'inbox' ? 'inline-block' : 'none';
+                document.getElementById('btnActionLib').style.display = context === 'lib' ? 'inline-block' : 'none';
+            } else {
+                bar.style.display = 'none';
+            }
+        }
+
+        function unselectAll() {
+            document.querySelectorAll('.file-check').forEach(c => { c.checked = false; highlightRow(c); });
+            document.getElementById('bulkBar').style.display = 'none';
+        }
+
+        function getSelected(context) {
+            const selected = [];
+            document.querySelectorAll(`.${context}-check:checked`).forEach(c => {
+                selected.push(context === 'lib' ? parseInt(c.value) : c.value);
+            });
+            return selected;
+        }
+
+        // --- 3. MODALE TAGS (INBOX OU LIBRAIRIE) ---
+        function openBulkModal(context, dataArray) {
+            if(dataArray.length === 0) return;
+            
+            document.getElementById('modalContext').value = context;
+            document.getElementById('targetData').value = JSON.stringify(dataArray);
+            
+            document.getElementById('modalTitle').innerText = context === 'inbox' ? 
+                `Enregistrer ${dataArray.length} nouveau(x) fichier(s)` : 
+                `Modifier tags de ${dataArray.length} fichier(s)`;
+
+            document.getElementById('modeSelector').style.display = context === 'inbox' ? 'none' : 'block';
+            document.querySelectorAll('.modal-tag-check').forEach(c => c.checked = false);
+            document.getElementById('fileModal').style.display = 'flex';
+        }
+
+        function submitModal() {
+            const context = document.getElementById('modalContext').value;
+            const targetData = JSON.parse(document.getElementById('targetData').value);
+            
+            const selectedTags = [];
+            document.querySelectorAll('.modal-tag-check:checked').forEach(c => selectedTags.push(c.value));
+
+            if (context === 'inbox') {
+                fetch('/api/bulk_add_inbox', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ category: CURRENT_CATEGORY, filenames: targetData, tags: selectedTags })
+                }).then(r=>r.json()).then(d=>{ if(d.success) location.reload(); else alert(d.error); });
+                
+            } else {
+                const mode = document.querySelector('input[name="tagMode"]:checked').value;
+                fetch('/api/bulk_update_file_tags', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ category: CURRENT_CATEGORY, file_ids: targetData, tags: selectedTags, mode: mode })
+                }).then(r=>r.json()).then(d=>{ if(d.success) location.reload(); else alert(d.error); });
+            }
+        }
+
+        // --- 4. SUPPRESSION & RECHERCHE ---
+        function deleteMedia(fileId) {
+            if(!confirm("⚠️ Supprimer définitivement ce fichier ?")) return;
+            fetch('/api/delete_media', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ category: CURRENT_CATEGORY, file_id: fileId })
+            }).then(r => r.json()).then(data => {
+                if(data.success) {
+                    const row = document.getElementById('row-' + fileId);
+                    if(row) row.remove();
+                    unselectAll();
+                } else alert("Erreur: " + data.error);
+            });
+        }
+        
+        function filterTable() {
+            const filter = document.getElementById("searchInput").value.toUpperCase();
+            const tr = document.getElementById("fileTable").getElementsByTagName("tr");
+            for (let i = 1; i < tr.length; i++) {
+                const td = tr[i].getElementsByTagName("td")[2];
+                if (td) {
+                    tr[i].style.display = (td.textContent.toUpperCase().indexOf(filter) > -1) ? "" : "none";
+                }
+            }
+        }
+    </script>
+</body>
+</html>

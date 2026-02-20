@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}Histoire - Jeux Manon{% endblock %}
+
+{% block nav %}HISTOIRE{% endblock %}
+
+{% block content %}
+    <h1 class="page-title">CHOISIS TON THEME !</h1>
+    <p class="page-subtitle">HISTOIRE</p>
+
+    <div class="theme-grid">
+        {% for theme in themes %}
+            <a href="{{ url_for('story_choice', tag=theme.name) }}" class="theme-card">
+                
+                <div class="theme-image-box">
+                    <img src="{{ url_for('static', filename='uploads/themes/' + theme.img) }}" 
+                         alt="{{ theme.name }}"
+                         onerror="this.src='{{ url_for('static', filename='uploads/icones/theme_princesse.png') }}'"> 
+                         </div>
+                
+                <h2>{{ theme.name }}</h2>
+            </a>
+        {% else %}
+            <p style="grid-column: 1/-1; text-align: center;">Aucun thème disponible.</p>
+        {% endfor %}
+    </div>
+{% endblock %}

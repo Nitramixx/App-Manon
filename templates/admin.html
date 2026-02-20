@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Administration</title>
+    <style>
+        body { font-family: sans-serif; padding: 2rem; max-width: 800px; margin: 0 auto; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .card { border: 1px solid #ddd; padding: 20px; text-align: center; border-radius: 8px; transition: 0.3s; }
+        .card:hover { background-color: #f9f9f9; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        a { text-decoration: none; color: #333; font-size: 1.2rem; display: block; height: 100%; }
+        h1 { text-align: center; }
+        .back-link { display: block; margin-bottom: 20px; color: #666; }
+    </style>
+</head>
+<body>
+    <a href="/" class="back-link">← Retour au site</a>
+    <h1>Panneau d'Administration</h1>
+    
+    <div class="grid">
+        <div class="card">
+            <a href="/admin/process/music">🎵 Gérer les Musiques</a>
+        </div>
+        <div class="card">
+            <a href="/admin/process/video">🎬 Gérer les Vidéos</a>
+        </div>
+        <div class="card">
+            <a href="/admin/process/photo">📷 Gérer les Photos</a>
+        </div>
+        <div class="card">
+            <a href="/admin/process/story">✍️ Écrire une Histoire</a>
+        </div>
+        <div class="card">
+            <a href="/admin/process/writing">📝 Ajouter des mots</a>
+        </div>
+        <div class="card">
+            <a href="/admin/planning">📅 Planning</a>
+        </div>
+        <div class="card">
+            <a href="/admin/memory">🧠 Configurer le Memory</a>
+        </div>
+        <div class="card">
+            <a href="/admin/puzzle">🧩 Configurer le Puzzle</a>
+        </div>
+    </div>
+</body>
+</html>

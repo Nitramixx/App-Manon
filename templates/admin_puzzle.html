@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container" style="text-align: center;">
+    <h1>🧩 Configurer le Puzzle</h1>
+    
+    <div class="card-link" style="background: white; cursor: default;">
+        <form action="{{ url_for('save_puzzle_config') }}" method="POST">
+            
+            <div style="margin-bottom: 30px;">
+                <h3>Difficulté (Taille de la grille)</h3>
+                <div style="display: flex; justify-content: center; gap: 20px; color: black;">
+                    <label class="tag-card {% if config.difficulty == 2 %}all{% endif %}" style="cursor: pointer;">
+                        <input type="radio" name="difficulty" value="2" {% if config.difficulty == 2 %}checked{% endif %}>
+                        2 x 2 (Très facile)
+                    </label>
+                    <label class="tag-card {% if config.difficulty == 3 %}all{% endif %}" style="cursor: pointer;">
+                        <input type="radio" name="difficulty" value="3" {% if config.difficulty == 3 %}checked{% endif %}>
+                        3 x 3 (Moyen)
+                    </label>
+                    <label class="tag-card {% if config.difficulty == 4 %}all{% endif %}" style="cursor: pointer;">
+                        <input type="radio" name="difficulty" value="4" {% if config.difficulty == 4 %}checked{% endif %}>
+                        4 x 4 (Difficile)
+                    </label>
+                </div>
+            </div>
+
+            <hr>
+
+            <div style="margin-bottom: 30px;">
+                <h3>Mode de Jeu</h3>
+                <p>Comment déplacer les pièces ?</p>
+                <select name="mode" style="font-size: 1.5rem; padding: 10px; border-radius: 10px; width: 80%;">
+                    <option value="swap" {% if config.mode == 'swap' %}selected{% endif %}>👆 CLIC & ÉCHANGE (Recommandé - Plus calme)</option>
+                    <option value="drag" {% if config.mode == 'drag' %}selected{% endif %}>✋ GLISSER & DÉPOSER (Drag & Drop)</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn-done">💾 ENREGISTRER</button>
+        </form>
+    </div>
+    
+    <br>
+    <a href="{{ url_for('admin') }}" class="btn-back" style="background: #999;">RETOUR ADMIN</a>
+</div>
+{% endblock %}

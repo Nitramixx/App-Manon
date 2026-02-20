@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+
+{% block title %}Musique - Jeux Manon{% endblock %}
+
+{% block nav %}MUSIQUE{% endblock %}
+
+{% block content %}
+<div style="text-align: center; margin-bottom: 20px;">
+    {% if mode == 'random' %}
+        <h2 class="page-title" style="margin:0; font-size: 2rem;">RADIO ALÉATOIRE 🎲</h2>
+    {% else %}
+        <h2 class="page-title" style="margin:0; font-size: 2rem;">{{ tag_name | capitalize }}</h2>
+    {% endif %}
+</div>
+
+<div class="music-split-container" id="tv-anchor">
+    
+    <div class="player-column" style="flex:3;">
+        
+        <div class="tv-wrapper">
+            <video id="musicPlayer" class="tv-video" controls autoplay>
+                <source src="{{ url_for('static', filename='musics/' + track.title) }}" type="video/mp4">
+            </video>
+
+            <button onclick="toggleFullScreen()" class="tv-btn-fullscreen" title="Plein Écran">⛶</button>
+
+            {% if mode == 'playlist' and prev_index is not none %}
+                <a href="{{ url_for('music_playlist', tag_name=tag_name, index=prev_index) }}#tv-anchor" class="tv-nav-btn prev">◀</a>
+            {% elif mode == 'random' %}
+                <a href="{{ url_for('music_random') }}#tv-anchor" class="tv-nav-btn prev"></a>
+            {% endif %}
+
+            {% if mode == 'playlist' %}
+                {% if next_index is not none %}
+                    <a href="{{ url_for('music_playlist', tag_name=tag_name, index=next_index) }}#tv-anchor" class="tv-nav-btn next" id="btnNext">▶</a>
+                {% else %}
+                    <a href="{{ url_for('music_random') }}#tv-anchor" class="tv-nav-btn next" id="btnNext" style="font-size:1rem; font-weight:bold;">FIN</a>
+                {% endif %}
+            {% else %}
+                <a href="{{ url_for('music_random') }}#tv-anchor" class="tv-nav-btn next" id="btnNext"></a>
+            {% endif %}
+        </div>
+
+        <div style="text-align: center; margin-top: 20px;">
+            <h1 class="track-title" style="font-size: 1.8rem; color: #333;">{{ track.title }}</h1>
+        </div>
+    </div>
+
+    <div class="sidebar-playlist">
+        
+        <a href="{{ url_for('music_random') }}#tv-anchor" class="playlist-item {{ 'active' if mode == 'random' else '' }}">
+            <img src="{{ url_for('static', filename='uploads/icones/GATEAU ANNIVERSAIRE.png') }}" class="playlist-thumb">
+            <span class="playlist-name">ALÉATOIRE</span>
+        </a>
+
+        {% for tagObj in tags %}
+            <a href="{{ url_for('music_playlist', tag_name=tagObj.name) }}#tv-anchor" 
+               class="playlist-item {{ 'active' if mode == 'playlist' and tag_name == tagObj.name else '' }}">
+                
+                <img src="{{ url_for('static', filename='uploads/themes/' + tagObj.img) }}" 
+                     class="playlist-thumb"
+                     onerror="this.src='{{ url_for('static', filename='uploads/icones/GATEAU ANNIVERSAIRE.png') }}'">
+                
+                <span class="playlist-name">{{ tagObj.name }}</span>
+            </a>
+        {% endfor %}
+
+    </div>
+
+</div>
+
+<script>
+    const video = document.getElementById('musicPlayer');
+    const btnNext = document.getElementById('btnNext');
+
+    // Autoplay Suivant
+    if(video && btnNext) {
+        video.addEventListener('ended', function() {
+            btnNext.click();
+        });
+    }
+
+    // Fonction Plein Écran
+    function toggleFullScreen() {
+        if (!document.fullscreenElement) {
+            video.requestFullscreen().catch(err => {
+                alert(`Erreur plein écran: ${err.message}`);
+            });
+        } else {
+            document.exitFullscreen();
+        }
+    }
+</script>
+
+{% endblock %}

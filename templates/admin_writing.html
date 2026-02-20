@@ -1,0 +1,351 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+    /* Styles conservés */
+    .admin-panel { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); max-width: 800px; margin: 0 auto; }
+    .tags-selector { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; background: #f0f0f0; padding: 10px; border-radius: 5px; }
+    .tag-wrapper { display: inline-flex; align-items: center; background: white; padding: 5px 10px; border-radius: 15px; border: 1px solid #ddd; }
+    
+    .new-theme-box {
+        background: #e8f5e9; padding: 15px; border-radius: 8px; border: 1px solid #c8e6c9; 
+        display: flex; gap: 10px; align-items: flex-end; margin-bottom: 20px;
+    }
+    input[type="text"], input[type="file"] { width: 100%; padding: 8px; box-sizing: border-box; }
+    .btn-create { background: #4CAF50; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; height: 40px; }
+    
+    /* Boutons actions */
+    .btn-add-word { background: #2196F3; color: white; border: none; padding: 15px; width: 100%; border-radius: 4px; font-size: 1.1rem; cursor: pointer; }
+    .btn-edit { background: #ffc107; color: #333; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; text-decoration: none; font-size: 0.9rem; margin-right: 5px;}
+    .btn-del { background: #ff4444; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.9rem; }
+    .btn-cancel { background: #777; color: white; border: none; padding: 15px; width: 100%; border-radius: 4px; font-size: 1.1rem; cursor: pointer; margin-top: 10px; display: none; }
+</style>
+
+<h1>Administration Écriture</h1>
+
+<div class="admin-panel">
+    
+    <h3>Créer un nouveau Thème (Tag)</h3>
+    <div class="new-theme-box">
+        <div style="flex: 1;">
+            <label>Nom du thème :</label>
+            <input type="text" id="newTagName" placeholder="Ex: Animaux">
+        </div>
+        <div style="flex: 1;">
+            <label>Image du thème :</label>
+            <input type="file" id="newTagImage" accept="image/*" style="background: white;">
+        </div>
+        <button type="button" class="btn-create" onclick="createTheme()">+ CRÉER</button>
+    </div>
+
+    <hr style="margin: 20px 0; border: 0; border-top: 1px dashed #ccc;">
+
+    <h3 id="formTitle">Ajouter un mot au dictionnaire</h3>
+    <form id="addWordForm">
+        <input type="hidden" id="wordId">
+
+        <label><strong>Mot à écrire :</strong></label>
+        <input type="text" id="wordInput" placeholder="Ex: CHAT" required style="margin-bottom: 15px; font-size: 1.2rem;">
+
+        <label><strong>Choisir les catégories (Tags) :</strong></label>
+        <div class="tags-selector" id="existingTags">
+            {% for tag in available_tags %}
+            <span class="tag-wrapper">
+                <label style="cursor: pointer;">
+                    <input type="checkbox" name="selected_tags" value="{{ tag }}" class="tag-check"> {{ tag }}
+                </label>
+            </span>
+            {% else %}
+            <p style="color: #666; font-style: italic;">Aucun tag disponible. Créez-en un au-dessus.</p>
+            {% endfor %}
+        </div>
+
+        <button type="submit" class="btn-add-word" id="btnSubmit">ENREGISTRER LE MOT</button>
+        <button type="button" class="btn-cancel" id="btnCancel" onclick="resetForm()">ANNULER LA MODIFICATION</button>
+    </form>
+</div>
+
+<hr>
+
+<h3>Liste des mots existants</h3>
+<table class="word-table" style="width: 100%; border-collapse: collapse; background: white;">
+    <thead>
+        <tr style="background: #eee;">
+            <th style="padding: 10px; text-align: left;">Mot</th>
+            <th style="padding: 10px; text-align: left;">Catégories</th>
+            <th style="padding: 10px; text-align: left;">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for word in words %}
+        <tr style="border-bottom: 1px solid #ddd;" id="row-{{ word.id }}">
+            <td style="padding: 10px;"><strong>{{ word.word }}</strong></td>
+            <td style="padding: 10px;">
+                {% for t in word.tags %}
+                    <span class="tag-badge" style="background: #e0f7fa; padding: 2px 8px; border-radius: 10px; font-size: 0.9em;">{{ t }}</span>
+                {% endfor %}
+            </td>
+            <td style="padding: 10px;">
+                <button class="btn-edit" onclick='loadWord({{ word|tojson }})'>✏️</button>
+                <button class="btn-del" onclick="deleteWord({{ word.id }})">🗑️</button>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<hr style="margin: 40px 0;">
+
+    <h3 style="color: #2e7d32;">Gestion des Thèmes (Tags & Ambiances)</h3>
+    
+    <table class="word-table" style="margin-bottom: 40px;">
+        <thead>
+            <tr>
+                <th>Image</th>
+                <th>Thème</th>
+                <th>Musique</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for theme in themes %}
+            <tr id="theme-row-{{ theme.name|replace(' ', '_') }}">
+                <td>
+                    <img src="{{ url_for('static', filename='uploads/themes/' + theme.img) }}" 
+                         style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid #ddd;">
+                </td>
+                <td><strong>{{ theme.name }}</strong></td>
+                <td>
+                    {% if theme.music %}
+                        🎵 {{ theme.music }}
+                    {% else %}
+                        <span style="color:#ccc; font-style:italic;">Aucune</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <button class="btn-edit" onclick='openThemeEdit({{ theme|tojson }})'>⚙️</button>
+                    <button class="btn-del" onclick="deleteTheme('{{ theme.name }}')">🗑️</button>
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4" style="text-align:center;">Aucun thème configuré.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div id="themeModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; justify-content:center; align-items:center;">
+        <div style="background:white; padding:30px; border-radius:10px; width:400px; box-shadow:0 5px 15px rgba(0,0,0,0.3);">
+            <h3 style="margin-top:0;">Configurer le thème</h3>
+            
+            <input type="hidden" id="editOldName">
+            
+            <label><strong>Nom du tag :</strong></label>
+            <input type="text" id="editThemeName" style="margin-bottom:15px;">
+            <p style="font-size:0.8rem; color:#f44336; margin-top:-10px; margin-bottom:15px;">⚠️ Changer le nom mettra à jour tous les mots associés.</p>
+
+            <label><strong>Changer l'image :</strong></label>
+            <input type="file" id="editThemeImage" accept="image/*" style="margin-bottom:15px;">
+
+            <label><strong>Musique d'ambiance :</strong></label>
+            <select id="editThemeMusic" style="width:100%; padding:10px; margin-bottom:20px; border-radius:4px; border:1px solid #ccc;">
+                <option value="">-- Aucune musique --</option>
+                {% for m in musics %}
+                    <option value="{{ m.title }}">{{ m.title }}</option>
+                {% endfor %}
+            </select>
+
+            <div style="text-align:right; display:flex; gap:10px; justify-content:flex-end;">
+                <button type="button" onclick="closeThemeModal()" class="btn-cancel" style="display:inline-block; margin:0; width:auto;">Annuler</button>
+                <button type="button" onclick="saveThemeChanges()" class="btn-add-word" style="width:auto; margin:0;">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+
+    <hr style="margin: 20px 0; border: 0; border-top: 1px dashed #ccc;">
+
+<script>
+    // ... (Tes fonctions existantes loadWord, resetForm, etc.) ...
+
+    // --- NOUVELLES FONCTIONS GESTION THÈMES ---
+
+    function openThemeEdit(theme) {
+        document.getElementById('editOldName').value = theme.name;
+        document.getElementById('editThemeName').value = theme.name;
+        document.getElementById('editThemeImage').value = '';
+        
+        const musicSelect = document.getElementById('editThemeMusic');
+        musicSelect.value = theme.music || "";
+
+        document.getElementById('themeModal').style.display = 'flex';
+    }
+
+    function closeThemeModal() {
+        document.getElementById('themeModal').style.display = 'none';
+    }
+
+    function saveThemeChanges() {
+        const oldName = document.getElementById('editOldName').value;
+        const newName = document.getElementById('editThemeName').value.trim();
+        const musicFile = document.getElementById('editThemeMusic').value;
+        const imageFile = document.getElementById('editThemeImage').files[0];
+
+        if(!newName) return alert("Le nom ne peut pas être vide.");
+
+        const formData = new FormData();
+        formData.append('category', 'writing'); // IMPORTANT : on précise 'writing'
+        formData.append('old_name', oldName);
+        formData.append('new_name', newName);
+        formData.append('music_file', musicFile);
+        if(imageFile) formData.append('new_image', imageFile);
+
+        fetch('/api/update_theme', { method: 'POST', body: formData })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                alert("Thème mis à jour !");
+                location.reload();
+            } else {
+                alert("Erreur: " + data.error);
+            }
+        })
+        .catch(err => alert("Erreur réseau"));
+    }
+
+    function deleteTheme(tagName) {
+        if(!confirm("Supprimer le thème '" + tagName + "' ?\nCela retirera ce tag de tous les mots.")) return;
+
+        fetch('/api/delete_theme', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ category: 'writing', tag_name: tagName })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) location.reload();
+            else alert("Erreur: " + data.error);
+        });
+    }
+    
+    // --- GESTION DU FORMULAIRE (MODIF / AJOUT) ---
+
+    function loadWord(wordObj) {
+        // 1. Remplir le formulaire
+        document.getElementById('wordId').value = wordObj.id;
+        document.getElementById('wordInput').value = wordObj.word;
+        
+        // 2. Cocher les tags
+        document.querySelectorAll('.tag-check').forEach(cb => {
+            cb.checked = wordObj.tags.includes(cb.value);
+        });
+
+        // 3. Changer l'état visuel du formulaire
+        document.getElementById('formTitle').innerText = "Modifier le mot : " + wordObj.word;
+        document.getElementById('btnSubmit').innerText = "METTRE À JOUR LE MOT";
+        document.getElementById('btnSubmit').style.backgroundColor = "#ffc107"; // Jaune pour modif
+        document.getElementById('btnSubmit').style.color = "#333";
+        document.getElementById('btnCancel').style.display = "block";
+
+        // Scroll vers le formulaire
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function resetForm() {
+        // 1. Reset champs
+        document.getElementById('addWordForm').reset();
+        document.getElementById('wordId').value = '';
+
+        // 2. Reset visuel
+        document.getElementById('formTitle').innerText = "Ajouter un mot au dictionnaire";
+        document.getElementById('btnSubmit').innerText = "ENREGISTRER LE MOT";
+        document.getElementById('btnSubmit').style.backgroundColor = "#2196F3"; // Bleu origine
+        document.getElementById('btnSubmit').style.color = "white";
+        document.getElementById('btnCancel').style.display = "none";
+    }
+
+    // --- ENVOI DU FORMULAIRE ---
+    document.getElementById('addWordForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const id = document.getElementById('wordId').value;
+        const word = document.getElementById('wordInput').value.trim();
+        const checkboxes = document.querySelectorAll('input[name="selected_tags"]:checked');
+        const tags = Array.from(checkboxes).map(cb => cb.value);
+
+        if(!word) return;
+
+        const payload = { word: word, tags: tags };
+        if (id) payload.id = id; // Ajout de l'ID si modif
+
+        fetch('/api/add_word', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                location.reload(); 
+            } else {
+                alert("Erreur: " + data.error);
+            }
+        });
+    });
+
+    // --- SUPPRESSION ---
+    function deleteWord(id) {
+        if(!confirm("Supprimer ce mot définitivement ?")) return;
+
+        fetch('/api/delete_word', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({id: id})
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                document.getElementById('row-' + id).remove();
+            } else {
+                alert("Erreur: " + data.error);
+            }
+        });
+    }
+
+    // --- CRÉATION DE THÈME (Code existant) ---
+    function createTheme() {
+        const nameInput = document.getElementById('newTagName');
+        const imgInput = document.getElementById('newTagImage');
+        
+        if(!nameInput.value.trim() || !imgInput.files[0]) {
+            alert("Nom et Image obligatoires !");
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('tag_name', nameInput.value.trim());
+        formData.append('tag_image', imgInput.files[0]);
+
+        fetch('/api/create_writing_theme', { method: 'POST', body: formData })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                addCheckboxVisual(data.tag);
+                nameInput.value = '';
+                imgInput.value = '';
+                alert("Thème ajouté !");
+            } else {
+                alert("Erreur: " + data.error);
+            }
+        })
+        .catch(err => alert("Erreur réseau"));
+    }
+
+    function addCheckboxVisual(tagName) {
+        const container = document.getElementById('existingTags');
+        if(document.querySelector(`input[value="${tagName}"]`)) return;
+        const span = document.createElement('span');
+        span.className = 'tag-wrapper';
+        span.innerHTML = `<label style="cursor: pointer;"><input type="checkbox" name="selected_tags" value="${tagName}" checked class="tag-check"> ${tagName}</label>`;
+        container.appendChild(span);
+    }
+</script>
+{% endblock %}

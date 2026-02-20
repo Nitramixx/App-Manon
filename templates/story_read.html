@@ -1,0 +1,260 @@
+{% extends 'base.html' %}
+
+{% block nav %}HISTOIRE{% endblock %}
+
+{% block title %}{{ story.title }} - Chapitre {{ current_index + 1 }}{% endblock %}
+
+{% block content %}
+
+<style>
+    /* ... (Tes styles précédents restent ici : story-container, etc.) ... */
+    
+    .story-container { max-width: 1000px; margin: 20px auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+    .story-header { text-align: center; margin-bottom: 30px; border-bottom: 1px solid #eee; padding-bottom: 10px;}
+    .story-title { font-size: 2rem; color: #fbc4cb; margin: 0; }
+    .chapter-indicator { color: #888; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 2px;}
+    .chapter-content { display: flex; gap: 30px; align-items: flex-start; }
+    .chapter-visual { flex: 0 0 20%; vertical-align: center; }
+    .chapter-visual img { width: 100%; border-radius: 10px; }
+    .audio-player { margin-top: 15px; width: 80%; }
+    .chapter-text { flex: 1; font-size: 1.5rem; line-height: 2.5; color: #333; }
+    .nav-buttons { display: flex; justify-content: space-between; margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; }
+    .btn-nav { padding: 10px 20px; border-radius: 30px; text-decoration: none; font-weight: bold; transition: transform 0.2s; display: flex; align-items: center; gap: 10px; }
+    .btn-prev { background-color: #e2e8f0; color: #475569; }
+    .btn-next { background-color: #22c55e; color: white; }
+    .btn-home { background-color: #fca5a5; color: white; }
+
+    /* --- STYLES POUR LES ICÔNES INTERACTIVES --- */
+    img.interactive-icon {
+        height: 2.5em;
+        vertical-align: middle;
+        margin: 0 2px;
+        cursor: pointer;
+        border: 2px solid transparent;
+        border-radius: 5px;
+        transition: all 0.2s;
+    }
+    img.interactive-icon:hover {
+        transform: scale(1.3);
+        border-color: #fca5a5;
+        background: #fff0f0;
+    }
+
+    /* ... (Garde tes styles pour story-container, chapter-content, etc.) ... */
+
+    /* --- STYLES POUR LES ICÔNES INTERACTIVES --- */
+    img.interactive-icon {
+        height: 2.5em; vertical-align: middle; margin: 0 2px;
+        cursor: pointer; border: 2px solid transparent; border-radius: 5px; transition: all 0.2s;
+    }
+    img.interactive-icon:hover { transform: scale(1.3); border-color: #fca5a5; background: #fff0f0; }
+
+    /* --- STYLES MODALE JEU (ESTHÉTIQUE JEU D'ÉCRITURE) --- */
+    .modal-overlay {
+        display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0, 0, 0, 0.7); z-index: 1000; justify-content: center; align-items: center;
+    }
+    
+    .game-modal {
+        background: white; padding: 30px; border-radius: 15px; text-align: center;
+        max-width: 650px; /* Un peu plus large pour les longs mots */
+        width: 95%; box-shadow: 0 10px 25px rgba(0,0,0,0.5); animation: popIn 0.3s ease;
+    }
+    .modal-image img { height: 120px; margin-bottom: 10px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1)); }
+    
+    /* Les cases et modèles (Adaptées pour la modale) */
+    .word-area { display: flex; flex-direction: column; align-items: center; margin: 20px 0; cursor: pointer; }
+    .model-row { display: flex; gap: 8px; justify-content: center; margin-bottom: 5px; flex-wrap: wrap;}
+    .model-letter { width: 45px; height: 45px; display: flex; align-items: flex-end; justify-content: center; font-size: 30px; font-weight: 900; color: #333; font-family: 'Lato', sans-serif; }
+    
+    .input-row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+    .letter-box { width: 45px; height: 55px; border: 3px solid #ccc; border-radius: 10px; font-size: 30px; font-weight: bold; display: flex; align-items: center; justify-content: center; background: white; text-transform: uppercase; color: #333; box-shadow: 0 4px 0 #ddd; transition: all 0.1s ease; }
+    
+    .letter-box.correct { background-color: #4ade80; color: white; border-color: #22c55e; transform: scale(1.1); }
+    .letter-box.wrong { background-color: #f87171; color: white; border-color: #ef4444; }
+    
+    /* Zone de saisie cachée */
+    .input-trigger { cursor: text; padding: 15px; border: 2px dashed #5d594f; border-radius: 50px; background: #fbc4cb; display: inline-block; transition: transform 0.2s; margin-bottom: 20px;}
+    .input-trigger p { margin: 0; font-weight: bold; color: #b45309; }
+    .input-trigger:hover { transform: scale(1.05); background-color: #f8b4b4; }
+    #real-input { opacity: 0; position: absolute; pointer-events: none; }
+
+    .btn-check { background: #22c55e; color: white; border: none; padding: 15px 30px; font-size: 1.2rem; border-radius: 50px; cursor: pointer; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.2);}
+    .btn-close { background: #94a3b8; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; margin-top: 10px; font-size: 0.9rem;}
+
+    @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+</style>
+
+<div class="story-container">
+    <div class="story-header">
+        <div class="chapter-indicator">Chapitre {{ current_index + 1 }} / {{ total_chapters }}</div>
+        <h1 class="story-title">{{ story.title }}</h1>
+    </div>
+
+    <div class="chapter-content" id="media-focus">
+        <div class="chapter-visual">
+            
+            {% if chapter.audio %}
+                <audio id="mainAudio" controls class="audio-player">
+                    <source src="{{ url_for('static', filename='uploads/stories/' + chapter.audio) }}" type="audio/mpeg">
+                </audio>
+            {% endif %}
+        </div>
+
+        <div class="chapter-text">
+            {{ chapter.text | replace_icons | safe }}
+        </div>
+    </div>
+
+    <div class="nav-buttons">
+        {% if prev_index is not none %}
+            <a href="{{ url_for('story_reader', story_id=story.id, chapter=prev_index) }}#media-focus" class="btn-nav btn-prev">⬅ Précédent</a>
+        {% else %}<div></div>{% endif %}
+        
+        <a href="{{ url_for('story_menu', story_id=None) }}" class="btn-nav btn-home">Menu Histoires</a>
+
+        {% if next_index is not none %}
+            <a href="{{ url_for('story_reader', story_id=story.id, chapter=next_index) }}#media-focus" class="btn-nav btn-next">Suite ➡</a>
+        {% else %}
+            <div style="color: #22c55e; font-weight: bold; align-self: center;">Fin !</div>
+        {% endif %}
+    </div>
+</div>
+
+<div id="gameModal" class="modal-overlay">
+    <div class="game-modal">
+        <h3 style="color: #f472b6; margin-top: 0;">À toi de jouer !</h3>
+        
+        <div class="modal-image">
+            <img id="modalImg" src="" alt="Mot à deviner">
+        </div>
+
+        <div class="word-area" id="display-container" onclick="focusInput()">
+            <div class="model-row" id="modelRow">
+                </div>
+            <div class="input-row" id="inputRow">
+                </div>
+        </div>
+
+        <div class="input-trigger" id="input-area" onclick="focusInput()">
+            <input type="text" id="real-input" autocomplete="off" oninput="checkInput()">
+            <p><img width="100px" src="{{ url_for('static', filename='uploads/icones/UNLOCK-KEY.png') }}" alt="CLIQUE ICI POUR ÉCRIRE"></p>
+        </div>
+
+        <div id="successZone" style="display:none;">
+            <h2 style="color: #22c55e; font-size: 35px; margin: 10px 0 20px 0;">BRAVO ! 🎉</h2>
+            <button onclick="closeModal(true)" class="btn-check" id="btn-continue">Continuer l'histoire</button>
+        </div>
+
+        <div>
+            <button onclick="closeModal(true)" class="btn-close">Fermer sans jouer</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const modal = document.getElementById('gameModal');
+    const audio = document.getElementById('mainAudio');
+    const input = document.getElementById('real-input');
+    let currentTarget = ""; // Le mot qu'on doit trouver
+
+    // 1. Détection du clic sur les icônes dans le texte
+    document.addEventListener('click', function(e) {
+        if (e.target && e.target.classList.contains('interactive-icon')) {
+            const word = e.target.getAttribute('data-target');
+            const imgSrc = e.target.src;
+            openGame(word, imgSrc);
+        }
+    });
+
+    // 2. Focus forcé sur le champ caché
+    function focusInput() {
+        if (!input.disabled) input.focus();
+    }
+
+    // 3. Ouvrir le jeu et générer les cases
+    function openGame(word, imgSrc) {
+        if(audio && !audio.paused) {
+            audio.pause(); // Pause l'histoire
+        }
+
+        currentTarget = word.toUpperCase();
+        document.getElementById('modalImg').src = imgSrc;
+        
+        // Reconstruction de l'interface (Modèle + Cases)
+        const modelRow = document.getElementById('modelRow');
+        const inputRow = document.getElementById('inputRow');
+        modelRow.innerHTML = '';
+        inputRow.innerHTML = '';
+
+        for(let i=0; i < currentTarget.length; i++) {
+            const char = currentTarget[i];
+            
+            // Lettre modèle
+            const divModel = document.createElement('div');
+            divModel.className = 'model-letter';
+            divModel.innerText = char;
+            modelRow.appendChild(divModel);
+
+            // Case vide
+            const divBox = document.createElement('div');
+            divBox.className = 'letter-box';
+            divBox.id = 'box-' + i;
+            inputRow.appendChild(divBox);
+        }
+
+        // Reset Interface
+        input.value = "";
+        input.disabled = false;
+        document.getElementById('input-area').style.display = 'inline-block';
+        document.getElementById('successZone').style.display = 'none';
+        
+        modal.style.display = 'flex';
+        
+        // Petit délai pour assurer que la modale est visible avant de focus
+        setTimeout(focusInput, 100);
+    }
+
+    // 4. Validation en temps réel (A chaque lettre tapée)
+    function checkInput() {
+        const userVal = input.value.toUpperCase();
+        
+        // Mise à jour visuelle des cases
+        for (let i = 0; i < currentTarget.length; i++) {
+            const box = document.getElementById('box-' + i);
+            if(!box) continue;
+
+            if (i < userVal.length) {
+                const charTyped = userVal[i];
+                box.innerText = charTyped;
+                if (charTyped === currentTarget[i]) {
+                    box.className = 'letter-box correct';
+                } else {
+                    box.className = 'letter-box wrong';
+                }
+            } else {
+                box.innerText = '';
+                box.className = 'letter-box';
+            }
+        }
+
+        // Vérification de la victoire
+        if (userVal === currentTarget) {
+            input.disabled = true;
+            input.blur();
+            document.getElementById('input-area').style.display = 'none';
+            document.getElementById('successZone').style.display = 'block';
+            document.getElementById('btn-continue').focus(); // Prépare le bouton pour valider rapidement
+        }
+    }
+
+    // 5. Fermer le jeu
+    function closeModal(resumeAudio) {
+        modal.style.display = 'none';
+        if(resumeAudio && audio) {
+            audio.play(); // Relance l'histoire
+        }
+    }
+</script>
+
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container" style="text-align: center;">
+    <h1>⚙️ Configurer le Memory</h1>
+    
+    <div class="card-link" style="background: white; cursor: default;">
+        <form action="{{ url_for('save_memory_config') }}" method="POST">
+            
+            <div style="margin-bottom: 30px;">
+                <h3>Nombre de Cartes (Paires)</h3>
+                <p>Combien de paires Manon doit-elle trouver ?</p>
+                <select name="num_pairs" style="font-size: 1.5rem; padding: 10px; border-radius: 10px;">
+                    <option value="4" {% if config.num_pairs == 4 %}selected{% endif %}>8 cartes (4 paires) - Très Facile</option>
+                    <option value="6" {% if config.num_pairs == 6 %}selected{% endif %}>12 cartes (6 paires) - Facile</option>
+                    <option value="8" {% if config.num_pairs == 8 %}selected{% endif %}>16 cartes (8 paires) - Moyen</option>
+                    <option value="12" {% if config.num_pairs == 12 %}selected{% endif %}>24 cartes (12 paires) - Difficile</option>
+                </select>
+            </div>
+
+            <hr>
+
+            <div style="margin-bottom: 30px;">
+                <h3>Nombre de Joueurs</h3>
+                <div style="display: flex; justify-content: center; gap: 20px;">
+                    <label style="font-size: 1.5rem;">
+                        <input type="radio" name="num_players" value="1" {% if config.num_players == 1 %}checked{% endif %}>
+                        👤 Manon seule
+                    </label>
+                    <label style="font-size: 1.5rem;">
+                        <input type="radio" name="num_players" value="2" {% if config.num_players == 2 %}checked{% endif %}>
+                        👥 À deux (Tour par tour)
+                    </label>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-done">💾 ENREGISTRER</button>
+        </form>
+    </div>
+    
+    <br>
+    <a href="{{ url_for('admin') }}" class="btn-back" style="background: #999;">RETOUR MENU ADMIN</a>
+</div>
+{% endblock %}

@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+
+{% block title %}Calendrier - Jeux Manon{% endblock %}
+
+{% block nav %}CALENDRIER{% endblock %}
+
+{% block content %}
+<div class="menu-page"> <div class="week-bar">
+        {% for day in week_days %}
+        <div class="day-box day-{{ day.weekday }} {% if day.is_today %}is-today{% endif %}">
+            <span>{{ day.label }}</span>
+            
+            {% if day.events %}
+                <div class="day-mini-events">
+                    {% for evt in day.events %}
+                        {% if evt.img %}
+                            <img src="{{ url_for('static', filename='uploads/edt/' + evt.img) }}" 
+                                class="mini-event-thumb" 
+                                title="{{ evt.title }}">
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="planning-split">
+        
+        {% if current_task %}
+            <div class="validation-zone">
+                <form>
+                    <button type="submit" class="btn-big-validate">
+                        👍
+                    </button>
+                </form>
+            </div>
+
+            <div class="current-task-card">
+                
+                {% if current_task.img %}
+                    <img src="{{ url_for('static', filename='uploads/edt/' + current_task.img) }}" 
+                         onerror="this.style.display='none'">
+                {% endif %}
+
+                <h2>{{ current_task.title }}</h2>
+                <h3 style="color:#666;">{{ current_task.time }}</h3>
+            </div>
+
+            <div class="validation-zone">
+                <form action="{{ url_for('planning_validate', unique_id=current_task.unique_id) }}" method="POST">
+                    <button type="submit" class="btn-big-validate">
+                        👍
+                    </button>
+                </form>
+            </div>
+
+        {% elif is_finished %}
+            <div class="current-task-card" style="border-color: #bae6fd;">
+                <h2 style="font-size: 3rem;">JOURNÉE TERMINÉE !</h2>
+                <p>À demain Manon.</p>
+            </div>
+
+        {% else %}
+            <div class="current-task-card" style="border-color: #ddd;">
+                <h2>RIEN DE PRÉVU</h2>
+            </div>
+        {% endif %}
+
+    </div>
+
+</div>
+{% endblock %}

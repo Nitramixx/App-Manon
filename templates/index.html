@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block title %}Accueil - Jeux Manon{% endblock %}
+
+{% block nav %}Accueil
+    {% endblock %}
+
+{% block content %}
+    
+    <h1 class="page-title">BONJOUR MANON !</h1>
+
+    <div class="grid">
+        <a href="{{ url_for('planning') }}" class="card-link">
+            <span class="icon"><img src="static\uploads\icones\Calendrier.png" alt="Calendrier"></span>
+            <span>CALENDRIER</span>
+        </a>
+
+        <a href="{{ url_for('story_menu') }}" class="card-link">
+            <span class="icon"><img src="static\uploads\icones\Histoires.png" alt="Histoires"></span>
+            <span>HISTOIRE</span>
+        </a>
+
+        <a href="{{ url_for('writing_menu') }}" class="card-link">
+            <span class="icon"><img src="static\uploads\icones\Ecriture.png" alt="Ecriture"></span>
+            <span>ECRITURE</span>
+        </a>
+
+        <a href="{{ url_for('memory_menu') }}" class="card-link">
+            <span class="icon"><img src="static\uploads\icones\Memory.png" alt="Memory"></span>
+            <span>MEMORY</span>
+        </a>
+
+        <a href="{{ url_for('puzzle_menu') }}" class="card-link">
+            <span class="icon"><img src="static\uploads\icones\Puzzle.png" alt="Puzzle"></span>
+            <span>PUZZLE</span>
+        </a>
+
+        <a href="{{ url_for('music_random') }}" class="card-link">
+            <span class="icon"><img src="static\uploads\icones\Musique.png" alt="Musique"></span>
+            <span>MUSIQUE</span>
+        </a>
+
+        <a href="{{ url_for('photos_menu') }}" class="card-link">
+            <span class="icon"><img src="static\uploads\icones\Photos.png" alt="Photos"></span>
+            <span>PHOTO</span>
+        </a>
+
+        <a href="{{ url_for('videos_menu') }}" class="card-link">
+            <span class="icon"><img src="static\uploads\icones\Vidéos.png" alt="Videos"></span>
+            <span>VIDEO</span>
+        </a>
+
+    </div>
+
+{% endblock %}

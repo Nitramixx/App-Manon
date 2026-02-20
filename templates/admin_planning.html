@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Planning - OnigiriX</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .admin-split { display: flex; gap: 20px; }
+        .admin-col { flex: 1; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .item-row { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #eee; padding: 10px 0; }
+        .item-info { display: flex; align-items: center; gap: 10px; }
+        .mini-thumb { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; }
+        .btn-edit { background: orange; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px; }
+        .btn-delete { background: red; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px; }
+        .form-box { background: #f9f9f9; padding: 15px; margin-bottom: 20px; border-radius: 8px; border: 1px solid #ddd; }
+        input, select { padding: 8px; margin: 5px 0; width: 100%; box-sizing: border-box; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>ADMINISTRATION PLANNING</h1>
+        <a href="{{ url_for('index') }}" class="nav-btn">RETOUR ACCUEIL</a>
+    </header>
+
+    <div class="container admin-split">
+        
+        <div class="admin-col">
+            <h2>🔁 Routine Quotidienne</h2>
+            <p>Ces tâches apparaissent tous les jours.</p>
+
+            <div class="form-box">
+                <h4 id="routineFormTitle">Ajouter une tâche</h4>
+                <form action="{{ url_for('save_routine_item') }}" method="POST" enctype="multipart/form-data">
+                    <input type="hidden" name="id" id="routineId">
+                    <input type="hidden" name="current_image" id="routineCurrentImg">
+                    
+                    <label>Heure indicative (ex: 08:00)</label>
+                    <input type="time" name="time" id="routineTime" required>
+                    
+                    <label>Titre (ex: Petit Déj)</label>
+                    <input type="text" name="title" id="routineTitle" required>
+                    
+                    <label>Image</label>
+                    <input type="file" name="image_file" accept="image/*">
+                    
+                    <button type="submit" class="nav-btn" style="width:100%; margin-top:10px;">ENREGISTRER</button>
+                    <button type="button" onclick="resetRoutineForm()" style="width:100%; margin-top:5px; background:#ccc; border:none; padding:5px;">Annuler / Nouveau</button>
+                </form>
+            </div>
+
+            <div>
+                {% for item in routine %}
+                <div class="item-row">
+                    <div class="item-info">
+                        <strong>{{ item.time }}</strong>
+                        {% if item.img %}
+                            <img src="{{ url_for('static', filename='uploads/edt/' + item.img) }}" class="mini-thumb">
+                        {% endif %}
+                        <span>{{ item.title }}</span>
+                    </div>
+                    <div>
+                        <button class="btn-edit" onclick='editRoutine({{ item|tojson }})'>Modif</button>
+                        <form action="{{ url_for('delete_routine_item') }}" method="POST" style="display:inline;" onsubmit="return confirm('Supprimer ?');">
+                            <input type="hidden" name="id" value="{{ item.id }}">
+                            <button type="submit" class="btn-delete">X</button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="admin-col">
+            <h2>📅 Événements Spéciaux</h2>
+            <p>Des exceptions pour une date précise.</p>
+
+            <div class="form-box">
+                <h4 id="eventFormTitle">Ajouter un événement</h4>
+                <form action="{{ url_for('save_event_item') }}" method="POST" enctype="multipart/form-data">
+                    <input type="hidden" name="id" id="eventId">
+                    <input type="hidden" name="current_image" id="eventCurrentImg">
+
+                    <label>Date</label>
+                    <input type="date" name="date" id="eventDate" required>
+                    
+                    <label>Heure indicative</label>
+                    <input type="time" name="time" id="eventTime" required>
+                    
+                    <label>Titre (ex: Mamie)</label>
+                    <input type="text" name="title" id="eventTitle" required>
+                    
+                    <label>Image</label>
+                    <input type="file" name="image_file" accept="image/*">
+                    
+                    <button type="submit" class="nav-btn" style="width:100%; margin-top:10px;">ENREGISTRER</button>
+                    <button type="button" onclick="resetEventForm()" style="width:100%; margin-top:5px; background:#ccc; border:none; padding:5px;">Annuler / Nouveau</button>
+                </form>
+            </div>
+
+            <div>
+                {% for item in events %}
+                <div class="item-row">
+                    <div class="item-info">
+                        <small>{{ item.date }}</small>
+                        <strong>{{ item.time }}</strong>
+                        {% if item.img %}
+                            <img src="{{ url_for('static', filename='uploads/edt/' + item.img) }}" class="mini-thumb">
+                        {% endif %}
+                        <span>{{ item.title }}</span>
+                    </div>
+                    <div>
+                        <button class="btn-edit" onclick='editEvent({{ item|tojson }})'>Modif</button>
+                        <form action="{{ url_for('delete_event_item') }}" method="POST" style="display:inline;" onsubmit="return confirm('Supprimer ?');">
+                            <input type="hidden" name="id" value="{{ item.id }}">
+                            <button type="submit" class="btn-delete">X</button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Fonctions pour pré-remplir les formulaires (Interface pure)
+        function editRoutine(item) {
+            document.getElementById('routineId').value = item.id;
+            document.getElementById('routineTitle').value = item.title;
+            document.getElementById('routineTime').value = item.time;
+            document.getElementById('routineCurrentImg').value = item.img || '';
+            document.getElementById('routineFormTitle').innerText = "Modifier : " + item.title;
+            window.scrollTo(0,0);
+        }
+
+        function resetRoutineForm() {
+            document.getElementById('routineId').value = '';
+            document.getElementById('routineTitle').value = '';
+            document.getElementById('routineTime').value = '';
+            document.getElementById('routineCurrentImg').value = '';
+            document.getElementById('routineFormTitle').innerText = "Ajouter une tâche";
+        }
+
+        function editEvent(item) {
+            document.getElementById('eventId').value = item.id;
+            document.getElementById('eventDate').value = item.date;
+            document.getElementById('eventTitle').value = item.title;
+            document.getElementById('eventTime').value = item.time;
+            document.getElementById('eventCurrentImg').value = item.img || '';
+            document.getElementById('eventFormTitle').innerText = "Modifier : " + item.title;
+            window.scrollTo(0,0);
+        }
+
+        function resetEventForm() {
+            document.getElementById('eventId').value = '';
+            document.getElementById('eventDate').value = '';
+            document.getElementById('eventTitle').value = '';
+            document.getElementById('eventTime').value = '';
+            document.getElementById('eventCurrentImg').value = '';
+            document.getElementById('eventFormTitle').innerText = "Ajouter un événement";
+        }
+    </script>
+</body>
+</html>

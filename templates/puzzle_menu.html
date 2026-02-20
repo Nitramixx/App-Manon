@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block title %}Puzzle - Jeux Manon{% endblock %}
+
+{% block nav %}PUZZLE{% endblock %}
+
+{% block content %}
+<div class="menu-page container">
+    <h1 class="page-title">CHOISIS TON THEME !</h1>
+    <p class="page-subtitle">PUZZLE</p>
+
+    <div class="theme-grid">
+        {% for photo in photos %}
+        <a href="{{ url_for('puzzle_game', photo_id=photo.id) }}#media-focus" class="theme-card">
+            
+            <div class="theme-image-box">
+                <img src="{{ url_for('static', filename=photo.path.replace('static/', '')) }}" 
+                     alt="Puzzle {{ loop.index }}">
+            </div>
+            
+            <h2>Puzzle {{ loop.index }}</h2>
+        </a>
+        {% else %}
+            <p style="text-align:center; width:100%; grid-column: 1/-1;">Aucun puzzle disponible.</p>
+        {% endfor %}
+    </div>
+
+    <div style="margin-top: 30px; text-align: center;">
+        <a href="{{ url_for('index') }}" class="btn-back">⬅ RETOUR ACCUEIL</a>
+    </div>
+</div>
+{% endblock %}

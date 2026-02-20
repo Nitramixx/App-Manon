@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Jeux de Manon{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+    <header>
+        <nav class="main-nav">
+            <div class="nav-left">
+                <a href="{{ url_for('index') }}" class="home-link"><img style="border:none; width: 40px;" src="{{ url_for('static', filename='uploads/icones/MAISON.png') }}" alt="#"></a>
+                <span style="color: #fff;">MENU</span>
+
+            </div>
+
+            <span class="nav-breadcrumb" style="color: #fff;">
+                {% block nav %}{% endblock %}
+            </span>
+
+            <a href="/admin" class="nav-admin">ADMIN</a>
+        </nav>
+    </header>
+
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const audios = document.querySelectorAll('audio');
+        if (audios.length > 0) {
+            audios[0].play().catch(() => {
+                const btn = document.createElement('button');
+                btn.className = 'autoplay-resume';
+                btn.textContent = '▶ ACTIVER LE SON';
+                btn.onclick = () => { audios[0].play(); btn.remove(); };
+                document.body.appendChild(btn);
+            });
+        }
+    });
+    </script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+# Ignorer la base de données (pour ne pas écraser tes données en production)
+database.json
+
+# Ignorer tous les dossiers de médias lourds
+static/photos/
+static/videos/
+static/musics/
+static/inbox_photo/
+static/inbox_video/
+static/inbox_music/
+static/cache/
+static/uploads/
+
+# Fichiers Python inutiles
+__pycache__/
+*.pyc

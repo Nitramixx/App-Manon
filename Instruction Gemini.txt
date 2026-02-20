@@ -1,0 +1,39 @@
+Si quelque chose n'est pas clair, demande moi avant de commencer à coder,
+Si la tâche est trop complexe ou s'il y a une faille de raisonnement, demande moi de séquencer ma demande.
+"CONTEXTE IMPÉRATIF : Le backend est intégralement en PYTHON. C'est le script Python qui est responsable de toutes les opérations CRUD sur la base de données JSON. N'utilise jamais de logique JS ou autre pour la gestion des données."
+Pour les pages html, nous utilisons impérativement le module flask, avec un fichier base.html puis des templates qui en découlent
+
+
+
+Remarque : 
+*Général : Bouton retour à l'accueil / retour au menu précédent
+Histoire choice (+ lien dans le titre) / Word
+
+
+*Planning : Photos aléatoire / GIF pour chaque évènement de la journée.
+Afficher en miniature les évènements déjà réalisés dans la journée
+
+*Writing : Mettre en forme l'image et les boutons ...
+
+Bonus :
+Une aide sonore est disponible dans le petit bouton en bas à gauche, pour donner le nom de la lettre à écrire.
+
+Niveau 1 : feedback lettre par lettre
+Niveau 2 : feedback lettre par lettre mais seulement par dictée
+Niveau 3 : Recopie et feedback à la fin du mot
+
+*Ajouter un gestionnaire d'histoire
+
+*Memory : Animation de Bravo qui couvre toute la page, et renvoie au choix de memory
+(Au bout de trois fois, on peut lui proposer de retourner au menu)
+
+*Puzzle : par album phot ==> Lancement aléatoire
+
+*Musique : albums = gifs aléatoire qui change de vidéo toutes les X secondes
+Mettre en forme la sidebar
+
+*Photo / Vidéo : diaporama ==> passer automatiquement à la photo suivant + possibilité de changer plus vite avec les boutons.
++ dossier aléatoire
+Mettre en forme tout celà
+
+*contrainte que tout soit en majuscule + pas d'accent dans les mots a recopier

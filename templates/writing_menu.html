@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Écriture - Jeux Manon{% endblock %}
+
+{% block nav %}ECRITURE{% endblock %}
+
+{% block content %}
+    <h1 class="page-title">CHOISIS TON THEME !</h1>
+    <p class="page-subtitle">ECRITURE</p>
+
+    <div class="theme-grid">
+        <a href="{{ url_for('writing_game', category='Tout') }}" class="theme-card">
+            <div class="theme-image-box">
+                <img src="{{ url_for('static', filename='uploads/icones/theme_princesse.png') }}" alt="Tout">
+            </div>
+            <h2>TOUT MELANGER</h2>
+        </a>
+
+        {% for theme in themes %}
+            <a href="{{ url_for('writing_game', category=theme.name) }}" class="theme-card">
+                <div class="theme-image-box">
+                    <img src="{{ url_for('static', filename='uploads/themes/' + theme.img) }}" 
+                         alt="{{ theme.name }}"
+                         onerror="this.src='{{ url_for('static', filename='uploads/icones/ILLUSTRATION-61.png') }}'">
+                </div>
+                <h2>{{ theme.name }}</h2>
+            </a>
+        {% endfor %}
+    </div>
+{% endblock %}

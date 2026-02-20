@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block title %}Vidéo : {{ tag_name | capitalize }}{% endblock %}
+
+{% block nav %}VIDEO{% endblock %}
+
+{% block content %}
+<div class="media-viewer-container" id="media-focus">
+    
+    <div style="text-align: center; margin-bottom: 20px; width: 100%; position: relative;">
+        <a href="{{ url_for('videos_menu') }}" class="btn-back" style="position: absolute; left: 0; top: 0; padding: 8px 20px; font-size: 0.9rem;">
+            ⬅ Albums
+        </a>
+        <h2 style="margin: 0; color: var(--pink-primary);">{{ tag_name | capitalize }}</h2>
+        <p style="margin: 0; color: #666;">Vidéo {{ current_index + 1 }} sur {{ total }}</p>
+    </div>
+
+    <div class="media-frame">
+        <video id="mainVideo" class="media-content" controls autoplay>
+            <source src="{{ url_for('static', filename='videos/' + video.title) }}" type="video/mp4">
+            Ton navigateur ne supporte pas la vidéo.
+        </video>
+
+        {% if prev_index is not none %}
+            <a href="{{ url_for('video_player', tag_name=tag_name, index=prev_index) }}#media-focus" class="nav-arrow prev">◀</a>
+        {% endif %}
+
+        {% if next_index is not none %}
+            <a href="{{ url_for('video_player', tag_name=tag_name, index=next_index) }}#media-focus" class="nav-arrow next" id="linkNext">▶</a>
+        {% else %}
+            <a href="{{ url_for('videos_menu') }}" class="nav-arrow next" style="font-size: 1rem; border-radius: 10px; width: auto; padding: 0 15px;">FIN</a>
+        {% endif %}
+    </div>
+
+    <h3 style="margin-top: 10px;">{{ video.title }}</h3>
+
+</div>
+
+<script>
+    const video = document.getElementById('mainVideo');
+    const linkNext = document.getElementById('linkNext');
+
+    if (video && linkNext) {
+        // Enchaînement automatique à la fin de la vidéo
+        video.addEventListener('ended', function() {
+            linkNext.click();
+        });
+    }
+</script>
+{% endblock %}

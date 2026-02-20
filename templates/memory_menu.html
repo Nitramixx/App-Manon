@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block title %}Memory - Jeux Manon{% endblock %}
+
+{% block nav %}MEMORY{% endblock %}
+
+{% block content %}
+    <h1 class="page-title">CHOISIS TON THEME !</h1>
+    <p class="page-subtitle">MEMORY</p>
+
+    <div class="theme-grid">
+        {% for album in albums %}
+        <a href="{{ url_for('memory_game', tag_name=album.tag_name) }}#media-focus" class="theme-card">
+            <div class="theme-image-box">
+                <img src="{{ url_for('static', filename='uploads/icones/La couronne de la princesse.png') }}" alt="Cover">
+            </div>
+            <h2>{{ album.tag_name }}</h2>
+        </a>
+        {% else %}
+             {% for i in range(3) %}
+             <a href="#" class="theme-card">
+                <div class="theme-image-box">
+                    <img src="{{ url_for('static', filename='uploads/icones/La couronne de la princesse.png') }}" alt="Icone">
+                </div>
+                <h2>THEME {{ loop.index }}</h2>
+            </a>
+            {% endfor %}
+        {% endfor %}
+    </div>
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% block title %}Photos - Jeux Manon{% endblock %}
+
+{% block nav %}PHOTO{% endblock %}
+
+{% block content %}
+    <h1 class="page-title">CHOISIS TON THEME !</h1>
+    <p class="page-subtitle">PHOTO</p>
+
+    <div class="theme-grid">
+        {% for album in albums %}
+            <a href="{{ url_for('photo_viewer', tag_name=album.name) }}#media-focus" class="theme-card">
+                
+                <div class="theme-image-box">
+                    <img src="{{ url_for('static', filename='uploads/themes/' + album.img) }}" 
+                         alt="{{ album.name }}"
+                         onerror="this.src='{{ url_for('static', filename='uploads/icones/chat.png') }}'">
+                </div>
+                
+                <h2>{{ album.name | capitalize }}</h2>
+            </a>
+        {% else %}
+            <p style="text-align:center; width:100%; grid-column: 1/-1;">Aucun album photo disponible.</p>
+        {% endfor %}
+    </div>
+    
+    <div style="margin-top: 30px; text-align: center;">
+        <a href="{{ url_for('index') }}" class="btn-back" style="text-decoration: none; font-weight: bold; color: #555;">
+            ⬅ RETOUR ACCUEIL
+        </a>
+    </div>
+{% endblock %}

@@ -1,0 +1,180 @@
+{% extends 'base.html' %}
+{% block title %}Photos : {{ tag_name | capitalize }}{% endblock %}
+
+{% block nav %}PHOTO{% endblock %}
+
+{% block content %}
+
+{% if bg_music %}
+    <audio autoplay loop id="ambianceAudio">
+        <source src="{{ url_for('static', filename='musics/' + bg_music) }}" type="audio/mp3">
+    </audio>
+    <button onclick="toggleAmbiance()" style="position:fixed; top:80px; right:20px; z-index:100; background:white; border:none; border-radius:50%; width:40px; height:40px; box-shadow:0 2px 5px rgba(0,0,0,0.2); cursor:pointer;">
+        🔊
+    </button>
+    <script>
+        function toggleAmbiance() {
+            const audio = document.getElementById('ambianceAudio');
+            if (audio.paused) audio.play(); else audio.pause();
+        }
+        document.getElementById('ambianceAudio').volume = 0.3;
+    </script>
+{% endif %}
+
+<div class="media-viewer-container" id="media-focus">
+    
+    <div style="text-align: center; margin-bottom: 20px; width: 100%; position: relative;">
+        <a href="{{ url_for('photos_menu') }}" class="btn-back" style="position: absolute; left: 0; top: 0; padding: 8px 20px; font-size: 0.9rem;">
+            ⬅ Albums
+        </a>
+        <h2 style="margin: 0; color: var(--pink-primary);">{{ tag_name | capitalize }}</h2>
+        <p style="margin: 0; color: #666;">Photo <span id="lblIndex">{{ current_index + 1 }}</span> sur {{ total }}</p>
+    </div>
+
+    <div class="media-frame">
+        <img id="mainImage" 
+             src="{{ url_for('static', filename='photos/' + photo.title) }}" 
+             alt="{{ photo.title }}" 
+             class="media-content">
+
+        <a href="javascript:void(0)" onclick="prevPhoto()" class="nav-arrow prev" id="btnPrev" 
+           style="display: {{ 'flex' if current_index > 0 else 'none' }}">◀</a>
+
+        <a href="javascript:void(0)" onclick="nextPhoto()" class="nav-arrow next" id="btnNext"
+           style="display: {{ 'flex' if current_index < total - 1 else 'none' }}">▶</a>
+           
+        <a href="{{ url_for('photos_menu') }}" class="nav-arrow next" id="btnFinish"
+           style="font-size: 1rem; border-radius: 10px; width: auto; padding: 0 15px; display: {{ 'flex' if current_index >= total - 1 else 'none' }}">FIN</a>
+        
+        <div id="progressBar" class="timer-bar"></div>
+    </div>
+
+    <div class="slideshow-controls">
+        <button id="btnToggle" class="btn-toggle-slideshow" onclick="toggleSlideshow()">
+            ⏸ PAUSE
+        </button>
+        <span style="color:#888; font-size: 0.9rem;">Diaporama automatique</span>
+    </div>
+
+</div>
+
+<script>
+    // État global
+    const CATEGORY = 'photo';
+    const TAG_NAME = "{{ tag_name }}";
+    const TOTAL = {{ total }};
+    let currentIndex = {{ current_index }};
+    
+    // Configuration Timer
+    const TIME_PER_PHOTO = 5000; 
+    let isPlaying = true;
+    let timer = null;
+    
+    // Éléments DOM
+    const imgEl = document.getElementById('mainImage');
+    const lblIndex = document.getElementById('lblIndex');
+    const btnPrev = document.getElementById('btnPrev');
+    const btnNext = document.getElementById('btnNext');
+    const btnFinish = document.getElementById('btnFinish');
+    const progressBar = document.getElementById('progressBar');
+    const btnToggle = document.getElementById('btnToggle');
+
+    // --- LOGIQUE NAVIGATION AJAX ---
+
+    function loadMedia(newIndex) {
+        // Stop timer pendant le chargement
+        stopTimer();
+
+        fetch(`/api/get_media_data?category=${CATEGORY}&tag=${TAG_NAME}&index=${newIndex}`)
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                // 1. Mise à jour Image
+                // Astuce : on fade-out/in pour faire joli ? Pour l'instant simple switch.
+                imgEl.src = "/static/" + data.path;
+                
+                // 2. Mise à jour Compteurs
+                currentIndex = data.index;
+                lblIndex.innerText = currentIndex + 1;
+
+                // 3. Gestion boutons Prev/Next/Fin
+                btnPrev.style.display = (currentIndex > 0) ? 'flex' : 'none';
+                
+                if (currentIndex < TOTAL - 1) {
+                    btnNext.style.display = 'flex';
+                    btnFinish.style.display = 'none';
+                    // Relance le timer si on était en lecture
+                    if(isPlaying) startTimer();
+                } else {
+                    btnNext.style.display = 'none';
+                    btnFinish.style.display = 'flex';
+                    // Fin du diaporama
+                    isPlaying = false;
+                    btnToggle.style.display = 'none'; // Cache le bouton pause
+                }
+            }
+        })
+        .catch(err => console.error("Erreur chargement:", err));
+    }
+
+    function nextPhoto() {
+        if(currentIndex < TOTAL - 1) {
+            loadMedia(currentIndex + 1);
+        }
+    }
+
+    function prevPhoto() {
+        if(currentIndex > 0) {
+            loadMedia(currentIndex - 1);
+        }
+    }
+
+    // --- LOGIQUE DIAPORAMA ---
+
+    function startTimer() {
+        if (currentIndex >= TOTAL - 1) return; // Pas de timer sur la dernière
+        
+        progressBar.style.transition = 'none';
+        progressBar.style.width = '0%';
+        void progressBar.offsetWidth; // Force reflow
+        
+        progressBar.style.transition = `width ${TIME_PER_PHOTO}ms linear`;
+        progressBar.style.width = '100%';
+
+        timer = setTimeout(() => {
+            nextPhoto();
+        }, TIME_PER_PHOTO);
+    }
+
+    function stopTimer() {
+        if (timer) clearTimeout(timer);
+        progressBar.style.width = '0%'; 
+        progressBar.style.transition = 'none';
+    }
+
+    function toggleSlideshow() {
+        isPlaying = !isPlaying;
+        if (isPlaying) {
+            btnToggle.innerHTML = "⏸ PAUSE";
+            btnToggle.classList.remove('paused');
+            startTimer();
+        } else {
+            btnToggle.innerHTML = "▶ LECTURE";
+            btnToggle.classList.add('paused');
+            stopTimer();
+        }
+    }
+
+    // Démarrage
+    window.onload = function() {
+        // Scroll automatique vers le cadre
+        document.getElementById('media-focus').scrollIntoView({behavior: "smooth"});
+        
+        if (currentIndex < TOTAL - 1) {
+            startTimer();
+        } else {
+            btnToggle.style.display = 'none';
+        }
+    };
+</script>
+{% endblock %}
