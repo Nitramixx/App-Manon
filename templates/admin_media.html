@@ -370,6 +370,12 @@
             const selectedTags = [];
             document.querySelectorAll('.modal-tag-check:checked').forEach(c => selectedTags.push(c.value));
 
+            document.querySelectorAll('video, audio').forEach(media => {
+                media.pause();
+                media.removeAttribute('src');
+                media.load();
+            });
+            
             if (context === 'inbox') {
                 fetch('/api/bulk_add_inbox', {
                     method: 'POST',

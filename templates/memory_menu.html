@@ -10,21 +10,26 @@
 
     <div class="theme-grid">
         {% for album in albums %}
-        <a href="{{ url_for('memory_game', tag_name=album.tag_name) }}#media-focus" class="theme-card">
+        <a href="{{ url_for('memory_game', tag_name=album.name) }}#media-focus" class="theme-card">
             <div class="theme-image-box">
-                <img src="{{ url_for('static', filename='uploads/icones/La couronne de la princesse.png') }}" alt="Cover">
+                {% if album.img %}
+                    <img src="{{ url_for('static', filename='uploads/themes/' + album.img) }}" 
+                         alt="{{ album.name }}" 
+                         onerror="this.src='{{ url_for('static', filename='uploads/icones/chat.png') }}'">
+                {% elif album.thumb_path %}
+                    <img src="{{ url_for('static', filename=album.thumb_path) }}" 
+                         alt="{{ album.name }}">
+                {% else %}
+                    <img src="{{ url_for('static', filename='uploads/icones/La couronne de la princesse.png') }}" alt="Cover">
+                {% endif %}
+                {% if album.music %}
+                    <div class="has-music-icon">🎵</div>
+                {% endif %}
             </div>
-            <h2>{{ album.tag_name }}</h2>
+            <h2>{{ album.name | capitalize }}</h2>
         </a>
         {% else %}
-             {% for i in range(3) %}
-             <a href="#" class="theme-card">
-                <div class="theme-image-box">
-                    <img src="{{ url_for('static', filename='uploads/icones/La couronne de la princesse.png') }}" alt="Icone">
-                </div>
-                <h2>THEME {{ loop.index }}</h2>
-            </a>
-            {% endfor %}
+            <p style="text-align:center; width:100%; grid-column: 1/-1;">Aucun album disponible.</p>
         {% endfor %}
     </div>
 {% endblock %}

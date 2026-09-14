@@ -2,15 +2,14 @@
 
 {% block title %}Accueil - Jeux Manon{% endblock %}
 
-{% block nav %}Accueil
-    {% endblock %}
+{% block nav %}Accueil{% endblock %}
 
 {% block content %}
     
-    <h1 class="page-title">BONJOUR MANON !</h1>
+    <h1 class="page-title" onclick="secretAdminAccess(event)" style="cursor: default;">BONJOUR MANON !</h1>
 
     <div class="grid">
-        <a href="{{ url_for('planning') }}" class="card-link">
+        <a href="{{ url_for('planning') }}#media-focus" class="card-link">
             <span class="icon"><img src="static\uploads\icones\Calendrier.png" alt="Calendrier"></span>
             <span>CALENDRIER</span>
         </a>
@@ -51,5 +50,16 @@
         </a>
 
     </div>
+
+    <script>
+        function secretAdminAccess(event) {
+            // event.shiftKey = Touche Majuscule
+            // event.ctrlKey = Touche Contrôle (Ctrl)
+            // Le "&&" veut dire qu'il faut obligatoirement les DEUX en même temps
+            if (event.shiftKey && event.ctrlKey) {
+                window.location.href = "{{ url_for('admin') }}"; 
+            }
+        }
+    </script>
 
 {% endblock %}

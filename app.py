@@ -132,8 +132,12 @@ def photo_viewer(tag_name):
 @app.route('/videos')
 def videos_menu():
     data = load_data()
-    # UTILISATION DE LA NOUVELLE LOGIQUE THÈMES
-    themes = get_themes_for_category(data, 'video')
+    # On tente de récupérer les thèmes définis explicitement pour les vidéos.
+    # Si aucun n'est présent, on retombe sur la logique générique qui cherche
+    # les tags utilisés dans les fichiers (via get_themes_for_category).
+    themes = data.get('video_themes', [])
+    if not themes:
+        themes = get_themes_for_category(data, 'video')
     return render_template('videos_menu.html', albums=themes)
 
 @app.route('/videos/tag/<tag_name>')
@@ -430,137 +434,162 @@ def api_writing_next(category):
 @app.route('/planning')
 def planning():
     data = load_data()
-    
-    # 1. Gestion de la Date
     now = datetime.datetime.now()
     today_str = now.strftime("%Y-%m-%d")
-    current_weekday = now.weekday() # 0=Lundi, ..., 6=Dimanche
+    current_weekday = now.weekday()
 
-    # 2. Définir quels jours afficher dans le bandeau (Logique Semaine vs Weekend)
-    # Semaine (Lundi 0 à Vendredi 4) -> Affiche L, M, M, J, V
-    # Weekend (Samedi 5, Dimanche 6) -> Affiche S, D, L (du lundi suivant)
+    def get_tasks_for_date(target_date):
+        t_str = target_date.strftime("%Y-%m-%d")
+        t_wd = target_date.weekday()
+        t_month_day = target_date.strftime("%m-%d")
+        
+        is_holiday = False
+        for h in data.get('planning_holidays', []):
+            if h['start_date'] <= t_str <= h['end_date']:
+                is_holiday = True
+                break
+        
+        tasks = []
+        for r in data.get('planning_routine', []):
+            tasks.append({**r, "type": "routine", "unique_id": f"rout_{r['id']}"})
+            
+        for w in data.get('planning_weekly', []):
+            if int(w['day']) == t_wd:
+                if w.get('ignore_holidays') and is_holiday:
+                    continue
+                tasks.append({**w, "type": "weekly", "unique_id": f"week_{w['id']}"})
+                
+        for e in data.get('planning_events', []):
+            if e.get('is_annual') and e.get('date')[5:] == t_month_day:
+                tasks.append({**e, "type": "event", "unique_id": f"evt_{e['id']}"})
+            elif not e.get('is_annual') and e.get('date') == t_str:
+                tasks.append({**e, "type": "event", "unique_id": f"evt_{e['id']}"})
+                    
+        return sorted(tasks, key=lambda x: x.get('time', '00:00'))
+
     days_to_display = []
-    
-    if current_weekday < 5: # C'est la semaine
+    if current_weekday < 5:
         range_days = [0, 1, 2, 3, 4] 
-        start_date_ref = now - datetime.timedelta(days=current_weekday) # Caler sur le Lundi de cette semaine
-    else: # C'est le week-end
-        range_days = [5, 6, 0] # Samedi, Dimanche, Lundi
-        # Si on est Samedi (5), ref = aujourd'hui. Si Dimanche (6), ref = hier.
+        start_date_ref = now - datetime.timedelta(days=current_weekday)
+    else:
+        range_days = [5, 6, 0]
         offset = current_weekday - 5 
         start_date_ref = now - datetime.timedelta(days=offset)
 
-    # Noms des jours pour l'affichage
     day_labels = ["L", "M", "M", "J", "V", "S", "D"]
 
     for i, day_idx in enumerate(range_days):
-        # Calcul de la date réelle de ce jour affiché
-        # Attention : pour le week-end, le "Lundi" (0) est celui de la semaine d'après (+2 ou +3 jours)
         if current_weekday >= 5 and day_idx == 0:
-            # Cas spécial : Le Lundi affiché pendant le week-end est dans le futur
-            delta = (7 - current_weekday) # Jours restants avant lundi prochain
-            target_date = now + datetime.timedelta(days=delta)
-        elif current_weekday >= 5:
-             # Samedi ou Dimanche
-             target_date = start_date_ref + datetime.timedelta(days=i)
+            target_date = now + datetime.timedelta(days=(7 - current_weekday))
         else:
-            # Semaine normale
-            target_date = start_date_ref + datetime.timedelta(days=day_idx)
+            target_date = start_date_ref + datetime.timedelta(days=i)
             
         target_date_str = target_date.strftime("%Y-%m-%d")
+        day_tasks = get_tasks_for_date(target_date)
+        day_history = data.get('planning_log', {}).get(target_date_str, [])
         
-        # Récupération des miniatures (Evènements exceptionnels seulement)
-        events_that_day = [e for e in data.get('planning_events', []) if e['date'] == target_date_str]
+        # --- NOUVELLE LOGIQUE : LISTE D'OPTIONS ---
+        completed_map = {}
+        for item in day_history:
+            if isinstance(item, dict):
+                opt = item.get('option')
+                if isinstance(opt, str): opt = [opt] # Rétrocompatibilité
+                completed_map[item['id']] = opt or []
+            else:
+                completed_map[item] = []
+        
+        completed_tasks = []
+        pending_tasks = []
+        for t in day_tasks:
+            if t['unique_id'] in completed_map:
+                t['selected_options'] = completed_map[t['unique_id']]
+                t['selected_option_imgs'] = []
+                
+                # On récupère toutes les images des options cochées
+                if 'options' in t:
+                    for opt in t['options']:
+                        if opt.get('text') in t['selected_options'] and opt.get('img'):
+                            t['selected_option_imgs'].append(opt.get('img'))
+                            
+                completed_tasks.append(t)
+            else:
+                pending_tasks.append(t)
         
         days_to_display.append({
             "weekday": day_idx,
             "label": day_labels[day_idx],
-            "is_today": (day_idx == current_weekday),
+            "is_today": (target_date_str == today_str),
             "date": target_date_str,
-            "events": events_that_day # Pour les petits points/miniatures
+            "completed": completed_tasks,
+            "pending": pending_tasks
         })
 
-    # 3. Récupération de la Tâche Courante (À faire)
-    # On combine Routine + Evènements Exceptionnels du jour J
-    
-    # A. Routine (filtre simple : on prend tout pour l'instant, ou on pourrait filtrer par heure)
-    routine_tasks = data.get('planning_routine', [])
-    
-    # B. Exceptionnels
-    todays_events = [e for e in data.get('planning_events', []) if e['date'] == today_str]
-    
-    # C. Fusion et Tri par heure
-    all_tasks = []
-    for r in routine_tasks:
-        all_tasks.append({**r, "type": "routine", "unique_id": f"rout_{r['id']}"})
-    for e in todays_events:
-        all_tasks.append({**e, "type": "event", "unique_id": f"evt_{e['id']}"})
-        
-    all_tasks = sorted(all_tasks, key=lambda x: x['time'])
+    today_data = next((d for d in days_to_display if d['is_today']), None)
+    current_task = today_data['pending'][0] if today_data and today_data['pending'] else None
+    is_finished = today_data and len(today_data['pending']) == 0 and len(today_data['completed']) > 0
 
-    # D. Filtrage : Qu'est-ce qui est déjà fait ?
-    # On regarde dans un journal 'planning_log' du jour
-    history = data.get('planning_log', {}).get(today_str, [])
-    
-    # La première tâche qui n'est PAS dans l'historique est la tâche courante
-    current_task = None
-    for task in all_tasks:
-        if task['unique_id'] not in history:
-            current_task = task
-            break
-            
-    # Si tout est fini
-    is_finished = (current_task is None) and (len(all_tasks) > 0)
+    return render_template('planning.html', week_days=days_to_display, current_task=current_task, is_finished=is_finished)
 
-    return render_template('planning.html', 
-                           week_days=days_to_display, 
-                           current_task=current_task,
-                           is_finished=is_finished)
-
-# --- ROUTE ACTION : Valider une tâche ---
-@app.route('/planning/validate/<unique_id>', methods=['POST'])
-def planning_validate(unique_id):
+# --- ROUTE ACTION : Valider une tâche (AJAX) ---
+@app.route('/planning/validate', methods=['POST'])
+def planning_validate():
     data = load_data()
-    now = datetime.datetime.now()
-    today_str = now.strftime("%Y-%m-%d")
+    today_str = datetime.datetime.now().strftime("%Y-%m-%d")
     
-    # Initialisation de la structure de log si inexistante
+    req = request.json
+    unique_id = req.get('unique_id')
+    options_selected = req.get('options') # Ceci est maintenant une LISTE []
+    
     if 'planning_log' not in data:
         data['planning_log'] = {}
     if today_str not in data['planning_log']:
         data['planning_log'][today_str] = []
         
-    # On ajoute l'ID à la liste des faits
-    if unique_id not in data['planning_log'][today_str]:
-        data['planning_log'][today_str].append(unique_id)
-        save_data(data)
+    history = data['planning_log'][today_str]
+    entry = {"id": unique_id, "option": options_selected} if options_selected else unique_id
     
-    return redirect(url_for('planning'))
+    existing_ids = [item['id'] if isinstance(item, dict) else item for item in history]
+    if unique_id not in existing_ids:
+        history.append(entry)
+        save_data(data)
+        
+    return jsonify({"success": True})
 
 @app.route('/memory')
 def memory_menu():
     """
     Menu de choix du TAG pour le Memory.
-    Utilise la même logique que les photos pour trouver une miniature.
+    Moins complexe : on renvoie une liste d'albums structuré comme dans
+    `photos_menu()` afin que la template puisse être quasi identique.
+    Chaque élément contient :
+        - name : nom du tag/thème
+        - img  : nom du fichier image dans uploads/themes (peut être None)
+        - thumb_path : chemin relatif vers une image quelconque (photo) si img est manquant
+        - music : chemin éventuel vers un fichier musical
     """
     data = load_data()
-    PHOTOS_DATA = data['photo']
-    unique_tags = sorted(list(set(tag for item in PHOTOS_DATA for tag in item['tags'])))
-    
+
     albums_structured = []
-    for tag in unique_tags:
-        # Miniature = 1ère photo du tag
-        thumbnail_file = next((p['path'] for p in PHOTOS_DATA if tag in p['tags']), None) # Attention: on prend le path ici
-        
-        # On nettoie le path pour l'affichage si besoin, ou on l'utilise tel quel
-        # Dans database.json tu as "static/photos/..." donc c'est bon.
-        
-        if thumbnail_file:
+    themes = data.get('photo_themes', [])
+    if themes:
+        for theme in themes:
             albums_structured.append({
-                'tag_name': tag,
-                'thumb_path': thumbnail_file
+                'name': theme.get('name'),
+                'img': theme.get('img'),
+                'thumb_path': None,
+                'music': theme.get('music')
             })
-            
+    else:
+        # fallback en dehors du dossier themes
+        PHOTOS_DATA = data.get('photo', [])
+        unique_tags = sorted(list(set(tag for item in PHOTOS_DATA for tag in item['tags'])))
+        for tag in unique_tags:
+            thumbnail = next((p['path'] for p in PHOTOS_DATA if tag in p['tags']), None)
+            thumb_rel = None
+            if thumbnail:
+                thumb_rel = thumbnail.replace('static/', '', 1) if thumbnail.startswith('static/') else thumbnail
+            albums_structured.append({'name': tag, 'img': None, 'thumb_path': thumb_rel, 'music': None})
+
     return render_template('memory_menu.html', albums=albums_structured)
 
 @app.route('/memory/play/<tag_name>')
@@ -674,14 +703,205 @@ def admin_process(category):
 # --- ROUTE ADMIN : Affichage du Planning ---
 @app.route('/admin/planning')
 def admin_planning():
-    
     data = load_data()
-    # On trie la routine par heure pour l'affichage
-    routine_sorted = sorted(data.get('planning_routine', []), key=lambda x: x['time'])
-    # On trie les événements par date puis par heure
-    events_sorted = sorted(data.get('planning_events', []), key=lambda x: (x['date'], x['time']))
     
-    return render_template('admin_planning.html', routine=routine_sorted, events=events_sorted)
+    # 1. Routines
+    routine = sorted(data.get('planning_routine', []), key=lambda x: x.get('time', '00:00'))
+    
+    # 2. Hebdomadaire (Trié par jour 0=Lundi, puis heure)
+    weekly = sorted(data.get('planning_weekly', []), key=lambda x: (int(x.get('day', 0)), x.get('time', '00:00')))
+    
+    # 3. Événements (Ponctuels et Annuels)
+    events = sorted(data.get('planning_events', []), key=lambda x: x.get('date', '9999-99-99'))
+    
+    # 4. Vacances
+    holidays = sorted(data.get('planning_holidays', []), key=lambda x: x.get('start_date', '9999-99-99'))
+    
+    return render_template('admin_planning.html', 
+                           routine=routine, 
+                           weekly=weekly, 
+                           events=events, 
+                           holidays=holidays)
+
+# --- SAUVEGARDE ROUTINE (Avec Options Dynamiques & Audio) ---
+@app.route('/admin/planning/routine/save', methods=['POST'])
+def save_routine_item():
+    data = load_data()
+    items = data.get('planning_routine', [])
+    
+    item_id = request.form.get('id')
+    title = request.form.get('title')
+    time_val = request.form.get('time')
+    question = request.form.get('question')
+    
+    target_folder = os.path.join('static', 'uploads', 'edt')
+    os.makedirs(target_folder, exist_ok=True)
+
+    # Gestion Image Principale
+    image_filename = request.form.get('current_image')
+    file = request.files.get('image_file')
+    if file and file.filename != '':
+        filename = secure_filename(file.filename)
+        file.save(os.path.join(target_folder, filename))
+        image_filename = filename
+
+    # Gestion Audio Principal
+    audio_filename = request.form.get('current_audio')
+    audio_file = request.files.get('audio_file')
+    if audio_file and audio_file.filename != '':
+        afilename = secure_filename(audio_file.filename)
+        audio_file.save(os.path.join(target_folder, afilename))
+        audio_filename = afilename
+
+    # Gestion des Options Dynamiques (Images + Textes)
+    options_list = []
+    for i in range(1, 30): # On scanne jusqu'à 30 options possibles
+        opt_text = request.form.get(f'option_text_{i}')
+        if not opt_text: continue # Si l'option n'existe pas, on passe
+        
+        opt_img = request.form.get(f'option_current_img_{i}')
+        opt_file = request.files.get(f'option_img_{i}')
+        
+        if opt_file and opt_file.filename != '':
+            ofilename = secure_filename(opt_file.filename)
+            opt_file.save(os.path.join(target_folder, ofilename))
+            opt_img = ofilename
+            
+        options_list.append({"text": opt_text.strip(), "img": opt_img})
+
+    if item_id:
+        for item in items:
+            if str(item['id']) == item_id:
+                item.update({"title": title, "time": time_val, "img": image_filename, "audio": audio_filename, "question": question, "options": options_list})
+                break
+    else:
+        new_id = max([r.get('id', 0) for r in items] or [0]) + 1
+        items.append({"id": new_id, "title": title, "time": time_val, "img": image_filename, "audio": audio_filename, "question": question, "options": options_list})
+
+    data['planning_routine'] = items
+    save_data(data)
+    return redirect(url_for('admin_planning'))
+
+# --- SAUVEGARDE HEBDOMADAIRE ---
+@app.route('/admin/planning/weekly/save', methods=['POST'])
+def save_weekly_item():
+    data = load_data()
+    items = data.get('planning_weekly', [])
+    
+    item_id = request.form.get('id')
+    title = request.form.get('title')
+    day = int(request.form.get('day'))
+    time_val = request.form.get('time')
+    ignore_holidays = request.form.get('ignore_holidays') == 'on'
+    
+    target_folder = os.path.join('static', 'uploads', 'edt')
+    os.makedirs(target_folder, exist_ok=True)
+
+    image_filename = request.form.get('current_image')
+    file = request.files.get('image_file')
+    if file and file.filename != '':
+        filename = secure_filename(file.filename)
+        file.save(os.path.join(target_folder, filename))
+        image_filename = filename
+
+    audio_filename = request.form.get('current_audio')
+    audio_file = request.files.get('audio_file')
+    if audio_file and audio_file.filename != '':
+        afilename = secure_filename(audio_file.filename)
+        audio_file.save(os.path.join(target_folder, afilename))
+        audio_filename = afilename
+
+    if item_id:
+        for item in items:
+            if str(item['id']) == item_id:
+                item.update({"title": title, "day": day, "time": time_val, "img": image_filename, "audio": audio_filename, "ignore_holidays": ignore_holidays})
+                break
+    else:
+        new_id = max([r.get('id', 0) for r in items] or [0]) + 1
+        items.append({"id": new_id, "title": title, "day": day, "time": time_val, "img": image_filename, "audio": audio_filename, "ignore_holidays": ignore_holidays})
+
+    data['planning_weekly'] = items
+    save_data(data)
+    return redirect(url_for('admin_planning'))
+
+# --- SAUVEGARDE ÉVÉNEMENTS ---
+@app.route('/admin/planning/event/save', methods=['POST'])
+def save_event_item():
+    data = load_data()
+    items = data.get('planning_events', [])
+    
+    item_id = request.form.get('id')
+    title = request.form.get('title')
+    date_val = request.form.get('date')
+    time_val = request.form.get('time')
+    is_annual = request.form.get('is_annual') == 'on'
+    
+    target_folder = os.path.join('static', 'uploads', 'edt')
+    os.makedirs(target_folder, exist_ok=True)
+
+    image_filename = request.form.get('current_image')
+    file = request.files.get('image_file')
+    if file and file.filename != '':
+        filename = secure_filename(file.filename)
+        file.save(os.path.join(target_folder, filename))
+        image_filename = filename
+
+    audio_filename = request.form.get('current_audio')
+    audio_file = request.files.get('audio_file')
+    if audio_file and audio_file.filename != '':
+        afilename = secure_filename(audio_file.filename)
+        audio_file.save(os.path.join(target_folder, afilename))
+        audio_filename = afilename
+
+    if item_id:
+        for item in items:
+            if str(item['id']) == item_id:
+                item.update({"title": title, "date": date_val, "time": time_val, "img": image_filename, "audio": audio_filename, "is_annual": is_annual})
+                break
+    else:
+        new_id = max([r.get('id', 0) for r in items] or [0]) + 1
+        items.append({"id": new_id, "title": title, "date": date_val, "time": time_val, "img": image_filename, "audio": audio_filename, "is_annual": is_annual})
+
+    data['planning_events'] = items
+    save_data(data)
+    return redirect(url_for('admin_planning'))
+
+# --- SAUVEGARDE VACANCES ---
+@app.route('/admin/planning/holiday/save', methods=['POST'])
+def save_holiday_item():
+    data = load_data()
+    items = data.get('planning_holidays', [])
+    
+    item_id = request.form.get('id')
+    name = request.form.get('name')
+    start_date = request.form.get('start_date')
+    end_date = request.form.get('end_date')
+
+    if item_id:
+        for item in items:
+            if str(item['id']) == item_id:
+                item.update({"name": name, "start_date": start_date, "end_date": end_date})
+                break
+    else:
+        new_id = max([r.get('id', 0) for r in items] or [0]) + 1
+        items.append({"id": new_id, "name": name, "start_date": start_date, "end_date": end_date})
+
+    data['planning_holidays'] = items
+    save_data(data)
+    return redirect(url_for('admin_planning'))
+
+# --- SUPPRESSION GÉNÉRIQUE ---
+@app.route('/admin/planning/delete', methods=['POST'])
+def delete_planning_item():
+    data = load_data()
+    category = request.form.get('category') # 'planning_routine', 'planning_weekly', etc.
+    item_id = request.form.get('id')
+    
+    if category in data:
+        data[category] = [i for i in data[category] if str(i.get('id')) != item_id]
+        save_data(data)
+        
+    return redirect(url_for('admin_planning'))
 
 # --- ROUTE ADMIN : Gestion de la ROUTINE (Ajout / Modif / Suppr) ---
 def save_data(data):
@@ -692,181 +912,6 @@ def save_data(data):
     with open('database.json', 'w', encoding='utf-8') as f:
         json.dump(data, f, indent=4, ensure_ascii=False)
 
-@app.route('/admin/planning/routine/save', methods=['POST'])
-def save_routine_item():
-
-    data = load_data()
-    routine_list = data.get('planning_routine', [])
-
-    item_id = request.form.get('id') # Si vide = Ajout, Sinon = Modif
-    title = request.form.get('title')
-    time_val = request.form.get('time')
-    
-    # Gestion de l'image
-    image_filename = request.form.get('current_image') # Par défaut, l'ancienne
-    file = request.files.get('image_file')
-
-    if file and file.filename != '':
-        filename = secure_filename(file.filename)
-        
-        # --- MODIFICATION ICI ---
-        # 1. On définit le chemin cible : static/uploads/edt
-        # (On utilise os.path.join pour être compatible Windows/Mac/Linux)
-        target_folder = os.path.join('static', 'uploads', 'edt')
-        
-        # 2. On s'assure que le dossier existe, sinon on le crée
-        os.makedirs(target_folder, exist_ok=True)
-
-        # 3. On sauvegarde l'image dans ce dossier
-        file.save(os.path.join(target_folder, filename))
-        
-        image_filename = filename
-
-    if item_id: # --- MODIFICATION D'UN ITEM EXISTANT ---
-        for item in routine_list:
-            if str(item['id']) == item_id:
-                item['title'] = title
-                item['time'] = time_val
-                item['img'] = image_filename
-                break
-    else: # --- AJOUT D'UN NOUVEL ITEM ---
-        new_id = max([r['id'] for r in routine_list] or [0]) + 1
-        routine_list.append({
-            "id": new_id,
-            "title": title,
-            "time": time_val,
-            "img": image_filename
-        })
-
-    data['planning_routine'] = routine_list
-    save_data(data)
-    return redirect(url_for('admin_planning'))
-
-@app.route('/admin/planning/routine/delete', methods=['POST'])
-def delete_routine_item():
-    item_id = request.form.get('id')
-    data = load_data()
-    # On garde tous ceux qui n'ont PAS cet ID
-    data['planning_routine'] = [i for i in data['planning_routine'] if str(i['id']) != item_id]
-    save_data(data)
-    return redirect(url_for('admin_planning'))
-
-
-# --- ROUTE ADMIN : Gestion des ÉVÉNEMENTS SPÉCIAUX (Ajout / Modif / Suppr) ---
-@app.route('/admin/planning/event/save', methods=['POST'])
-def save_event_item():
-
-    data = load_data()
-    events_list = data.get('planning_events', [])
-
-    item_id = request.form.get('id')
-    date_val = request.form.get('date')
-    title = request.form.get('title')
-    time_val = request.form.get('time')
-    
-    image_filename = request.form.get('current_image')
-    file = request.files.get('image_file')
-    if file and file.filename != '':
-        filename = secure_filename(file.filename)
-        
-        # --- MODIFICATION ICI ---
-        # 1. On définit le chemin cible : static/uploads/edt
-        # (On utilise os.path.join pour être compatible Windows/Mac/Linux)
-        target_folder = os.path.join('static', 'uploads', 'edt')
-        
-        # 2. On s'assure que le dossier existe, sinon on le crée
-        os.makedirs(target_folder, exist_ok=True)
-
-        # 3. On sauvegarde l'image dans ce dossier
-        file.save(os.path.join(target_folder, filename))
-        
-        image_filename = filename
-
-    if item_id: # --- MODIFICATION ---
-        for item in events_list:
-            if str(item['id']) == item_id:
-                item['date'] = date_val
-                item['title'] = title
-                item['time'] = time_val
-                item['img'] = image_filename
-                break
-    else: # --- AJOUT ---
-        new_id = max([e['id'] for e in events_list] or [100]) + 1
-        events_list.append({
-            "id": new_id,
-            "date": date_val,
-            "title": title,
-            "time": time_val,
-            "img": image_filename
-        })
-
-    data['planning_events'] = events_list
-    save_data(data)
-    return redirect(url_for('admin_planning'))
-
-@app.route('/admin/planning/event/delete', methods=['POST'])
-def delete_event_item():
-    item_id = request.form.get('id')
-    data = load_data()
-    data['planning_events'] = [i for i in data['planning_events'] if str(i['id']) != item_id]
-    save_data(data)
-    return redirect(url_for('admin_planning'))
-
-# --- API (APPELS AJAX) ---
-# --- NOUVELLE API : CRÉATION DE THÈME (TAG + IMAGE) ---
-@app.route('/api/create_story_theme', methods=['POST'])
-def api_create_story_theme():
-    try:
-        data = load_data()
-        
-        # 1. Récupération des données
-        tag_name = request.form.get('tag_name').strip()
-        image_file = request.files.get('tag_image')
-        
-        if not tag_name or not image_file:
-            return jsonify({'success': False, 'error': 'Nom du tag et image requis'}), 400
-
-        # 2. Sauvegarde de l'image
-        # On s'assure que le dossier existe
-        os.makedirs(THEME_FOLDER, exist_ok=True)
-        
-        ext = image_file.filename.split('.')[-1]
-        safe_name = secure_filename(tag_name)
-        image_filename = f"theme_{safe_name}.{ext}"
-        image_path = os.path.join(THEME_FOLDER, image_filename)
-        image_file.save(image_path)
-        
-        # 3. Mise à jour de la Base de Données
-        
-        # A. Mise à jour de la liste 'story_themes' (Objets complets)
-        if 'story_themes' not in data:
-            data['story_themes'] = []
-            
-        # Vérifier si le thème existe déjà pour le mettre à jour, sinon ajouter
-        existing_theme = next((t for t in data['story_themes'] if t['name'] == tag_name), None)
-        if existing_theme:
-            existing_theme['img'] = image_filename # Mise à jour image
-        else:
-            data['story_themes'].append({
-                "name": tag_name,
-                "img": image_filename
-            })
-            
-        # B. Mise à jour de la liste 'available_tags' (Liste simple pour les checkboxs)
-        if 'story' not in data['available_tags']:
-            data['available_tags']['story'] = []
-            
-        if tag_name not in data['available_tags']['story']:
-            data['available_tags']['story'].append(tag_name)
-            data['available_tags']['story'].sort() # Garder l'ordre alphabétique
-
-        save_data(data)
-        
-        return jsonify({'success': True, 'tag': tag_name, 'img': image_filename})
-
-    except Exception as e:
-        print(f"ERREUR THEME: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
     
 @app.route('/api/create_writing_theme', methods=['POST'])
 def api_create_writing_theme():
@@ -1386,19 +1431,26 @@ def api_update_theme():
         elif 'music' in theme_obj and not music_file: 
             del theme_obj['music']
 
-        # 5. PROPAGATION GLOBALE DU CHANGEMENT DE NOM
+        # 5. ASSURER LA PRÉSENCE DANS available_tags (même si on ne renomme pas)
+        tag_list = data.get('available_tags', {}).get(tags_key, [])
+        if new_name not in tag_list:
+            tag_list.append(new_name)
+            tag_list.sort()
+            data['available_tags'][tags_key] = tag_list
+
+        # 6. PROPAGATION GLOBALE DU CHANGEMENT DE NOM
         if new_name != old_name:
             if any(t['name'] == new_name for t in themes):
                 return jsonify({'success': False, 'error': 'Ce nom de thème existe déjà !'}), 400
             
             theme_obj['name'] = new_name
             
-            # A. Mise à jour de la liste 'available_tags'
-            tag_list = data.get('available_tags', {}).get(tags_key, [])
+            # A. Mise à jour de la liste 'available_tags' (déjà assurée ci-dessus, il s'agit juste de remplacer l'ancien)
             if old_name in tag_list:
                 index = tag_list.index(old_name)
                 tag_list[index] = new_name
                 tag_list.sort()
+                data['available_tags'][tags_key] = tag_list
                 
             # B. Mise à jour de TOUTES les occurrences dans la base de données (Python CRUD)
             items = data.get(item_key, [])

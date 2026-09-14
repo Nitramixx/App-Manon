@@ -4,7 +4,7 @@ database.json
 # Ignorer tous les dossiers de médias lourds
 static/photos/
 static/videos/
-static/musics/
+static/music/
 static/inbox_photo/
 static/inbox_video/
 static/inbox_music/

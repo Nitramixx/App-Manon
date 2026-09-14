@@ -58,7 +58,14 @@ header {
 
 .nav-left { display: flex; align-items: center; gap: 15px; }
 .home-link { text-decoration: none; font-size: 1.5rem; padding-right: 15px; border-right: 2px solid #eee; width: 40px;}
-.nav-breadcrumb { margin-left: 5px; font-size: 2rem;}
+.main-nav { position: relative; }
+.nav-breadcrumb {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 2rem;
+    margin-left: 0;
+}
 .nav-admin { text-decoration: none; color: #b45309; background-color: #fef3c7; padding: 10px 20px; border-radius: 12px; border: 2px solid #f59e0b; font-size: 1rem; transition: transform 0.2s;}
 .nav-admin:hover { transform: scale(1.05); }
 
@@ -418,7 +425,7 @@ header {
     border-radius: 50%;    /* Rond */
     object-fit: cover;     /* L'image remplit le rond sans être écrasée */
     border: 3px solid white; /* Joli contour blanc pour ressortir sur la couleur */
-    background-color: white; /* Fond blanc si l'image est transparente */
+    background-color: #f9d3f5; /* Fond blanc si l'image est transparente */
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 /* Tu peux varier les couleurs des points via le HTML si besoin (ex: class="mini-dot blue") */
@@ -427,23 +434,24 @@ header {
 /* --- 3. ZONE PRINCIPALE (SPLIT) --- */
 .planning-split {
     display: flex;
-    align-items: flex-end; /* Aligne le bouton validation en bas avec la carte */
+    align-items: flex-end; /* Laisse les boutons en bas */
     justify-content: center;
     gap: 30px;
-    padding-bottom: 40px; /* Padding en bas de page */
-    max-width: 1100px;
+    padding-bottom: 40px; 
+    max-width: 1400px; /* ⬅️ ÉLARGI ICI (avant 1100px) pour donner de la place globale */
     margin: 0 auto;
 }
 
 /* --- 4. CARTE CENTRALE (La Tâche) --- */
 .current-task-card {
-    flex: 3; /* Prend la place principale */
-    background-color: #fbc4cb; /* Rose pastel comme sur l'image */
+    flex: 3; 
+    background-color: #fbc4cb; 
     color: white;
-    border-radius: 35px; /* Coins très arrondis */
-    padding: 30px;
+    border-radius: 35px; 
+    padding: 30px 40px; /* Un peu plus de padding sur les côtés */
     min-height: 350px;
-    
+    width: 100%; /* ⬅️ NOUVEAU : prend toute la place possible */
+    max-width: 1000px; /* ⬅️ ÉLARGI ICI (avant 700px) pour les options */
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -460,8 +468,8 @@ header {
     font-weight: 900;
     margin-bottom: 20px;
     line-height: 1.2;
-    color: white; /* Force le blanc */
-    text-shadow: none; /* Pas d'ombre portée pour garder le style "plat" pastel */
+    color: white; 
+    text-shadow: none; 
 }
 
 /* Images décoratives dans la carte (croissant, yaourt...) */
@@ -471,18 +479,18 @@ header {
     border: none;
     box-shadow: none;
     margin: 10px;
-    /* Un peu de transparence ou filtre blanc si tu veux l'effet "dessin blanc" */
-    /* filter: brightness(0) invert(1); <--- Décommente pour rendre les icones toutes blanches */
+    /* filter: brightness(0) invert(1); */
 }
 
-/* --- 5. ZONE VALIDATION (Droite) --- */
+/* --- 5. ZONE VALIDATION (Droite et Gauche) --- */
 .validation-zone {
     flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: flex-end; /* En bas */
+    justify-content: flex-end; 
     padding-bottom: 20px;
+    min-width: 120px; /* ⬅️ Assure que les boutons sur les côtés ne sont pas écrasés par la grande carte */
 }
 
 /* Le bouton rond rose avec le V */
@@ -753,6 +761,7 @@ header {
     overflow: hidden; /* Pour que la vidéo ne dépasse pas des arrondis */
     box-shadow: 0 10px 30px rgba(0,0,0,0.3);
     border: 8px solid white; /* Optionnel : petit cadre blanc style iPad */
+    max-width: 800px; /* Limite la largeur pour que ça ressemble à une TV/Tablette */
 }
 
 .tv-video {

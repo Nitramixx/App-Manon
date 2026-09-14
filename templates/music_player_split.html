@@ -19,7 +19,7 @@
         
         <div class="tv-wrapper">
             <video id="musicPlayer" class="tv-video" controls autoplay>
-                <source src="{{ url_for('static', filename='musics/' + track.title) }}" type="video/mp4">
+                <source src="{{ url_for('static', filename='music/' + track.title) }}" type="video/mp4">
             </video>
 
             <button onclick="toggleFullScreen()" class="tv-btn-fullscreen" title="Plein Écran">⛶</button>
@@ -41,7 +41,7 @@
             {% endif %}
         </div>
 
-        <div style="text-align: center; margin-top: 20px;">
+        <div style="text-align: center; margin-top: 20px; max-width: 800px;">
             <h1 class="track-title" style="font-size: 1.8rem; color: #333;">{{ track.title }}</h1>
         </div>
     </div>

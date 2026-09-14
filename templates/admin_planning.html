@@ -5,160 +5,478 @@
     <title>Admin Planning - OnigiriX</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
-        .admin-split { display: flex; gap: 20px; }
-        .admin-col { flex: 1; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .item-row { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #eee; padding: 10px 0; }
-        .item-info { display: flex; align-items: center; gap: 10px; }
-        .mini-thumb { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; }
-        .btn-edit { background: orange; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px; }
-        .btn-delete { background: red; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px; }
-        .form-box { background: #f9f9f9; padding: 15px; margin-bottom: 20px; border-radius: 8px; border: 1px solid #ddd; }
-        input, select { padding: 8px; margin: 5px 0; width: 100%; box-sizing: border-box; }
+        body { font-family: 'Lato', sans-serif; background: #f4f4f4; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        
+        /* Système d'Onglets */
+        .tab-bar { display: flex; border-bottom: 2px solid #ddd; margin-bottom: 20px; }
+        .tab-btn { background: none; border: none; padding: 10px 20px; font-size: 1.1rem; font-weight: bold; cursor: pointer; color: #666; transition: 0.3s; }
+        .tab-btn:hover { color: #2196F3; }
+        .tab-btn.active { color: #2196F3; border-bottom: 3px solid #2196F3; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* Mise en page interne */
+        .admin-split { display: flex; gap: 30px; }
+        .form-col { flex: 0 0 350px; background: #f9f9f9; padding: 20px; border-radius: 8px; border: 1px solid #ddd; height: fit-content;}
+        .list-col { flex: 1; }
+
+        input[type="text"], input[type="time"], input[type="date"], select, input[type="file"] { width: 100%; padding: 10px; margin: 5px 0 15px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        .checkbox-group { margin-bottom: 15px; background: white; padding: 10px; border-radius: 5px; border: 1px solid #ccc; }
+        
+        .item-row { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #eee; padding: 10px; background: white; margin-bottom: 5px; border-radius: 5px;}
+        .item-row:hover { background: #f0f8ff; }
+        .item-info { display: flex; align-items: center; gap: 15px; }
+        .mini-thumb { width: 50px; height: 50px; object-fit: cover; border-radius: 8px; }
+        
+        /* Options Dynamiques */
+        .option-box { background: #fff; padding: 10px; border: 1px dashed #ccc; margin-bottom: 10px; border-radius: 5px; position: relative; }
+        .btn-remove-opt { position: absolute; top: 5px; right: 5px; background: #f44336; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; font-size: 10px;}
+
+        /* Boutons */
+        .btn-green { background: #4CAF50; color: white; border: none; padding: 10px; width: 100%; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .btn-blue { background: #2196F3; color: white; border: none; padding: 8px; width: 100%; border-radius: 5px; cursor: pointer; margin-bottom: 15px; }
+        .btn-gray { background: #9e9e9e; color: white; border: none; padding: 10px; width: 100%; border-radius: 5px; cursor: pointer; margin-top: 5px; }
+        .btn-edit { background: #ff9800; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; }
+        .btn-delete { background: #f44336; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; }
+
+        /* Styles de l'Enregistreur Vocal */
+        .audio-recorder-container { background: #fff; border: 1px solid #ccc; padding: 10px; border-radius: 5px; margin-bottom: 15px; }
+        .btn-record { background: #f44336; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; flex: 1;}
+        .btn-record:hover { background: #d32f2f; }
+        .btn-stop { background: #333; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; flex: 1;}
+        .btn-stop:disabled { background: #ccc; cursor: not-allowed; }
+        .recording-pulse { animation: pulse 1s infinite; background: #d32f2f; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
     </style>
 </head>
 <body>
 
-    <header>
-        <h1>ADMINISTRATION PLANNING</h1>
-        <a href="{{ url_for('index') }}" class="nav-btn">RETOUR ACCUEIL</a>
+    <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h1>⚙️ ADMINISTRATION DU TEMPS</h1>
+        <a href="{{ url_for('index') }}" class="nav-btn" style="background: #333; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">RETOUR ACCUEIL</a>
     </header>
 
-    <div class="container admin-split">
-        
-        <div class="admin-col">
-            <h2>🔁 Routine Quotidienne</h2>
-            <p>Ces tâches apparaissent tous les jours.</p>
+    <div class="container">
+        <div class="tab-bar">
+            <button class="tab-btn active" id="btn-tab-routine" onclick="openTab('tab-routine')">🔁 Routines (Journal)</button>
+            <button class="tab-btn" id="btn-tab-weekly" onclick="openTab('tab-weekly')">📅 Hebdomadaire (École)</button>
+            <button class="tab-btn" id="btn-tab-events" onclick="openTab('tab-events')">🎈 Événements Spéciaux</button>
+            <button class="tab-btn" id="btn-tab-holidays" onclick="openTab('tab-holidays')">🏖️ Vacances</button>
+        </div>
 
-            <div class="form-box">
-                <h4 id="routineFormTitle">Ajouter une tâche</h4>
-                <form action="{{ url_for('save_routine_item') }}" method="POST" enctype="multipart/form-data">
-                    <input type="hidden" name="id" id="routineId">
-                    <input type="hidden" name="current_image" id="routineCurrentImg">
-                    
-                    <label>Heure indicative (ex: 08:00)</label>
-                    <input type="time" name="time" id="routineTime" required>
-                    
-                    <label>Titre (ex: Petit Déj)</label>
-                    <input type="text" name="title" id="routineTitle" required>
-                    
-                    <label>Image</label>
-                    <input type="file" name="image_file" accept="image/*">
-                    
-                    <button type="submit" class="nav-btn" style="width:100%; margin-top:10px;">ENREGISTRER</button>
-                    <button type="button" onclick="resetRoutineForm()" style="width:100%; margin-top:5px; background:#ccc; border:none; padding:5px;">Annuler / Nouveau</button>
-                </form>
-            </div>
+        <div id="tab-routine" class="tab-content active">
+            <div class="admin-split">
+                <div class="form-col">
+                    <h3 id="routineFormTitle">Ajouter une Routine</h3>
+                    <form action="{{ url_for('save_routine_item') }}" method="POST" enctype="multipart/form-data">
+                        <input type="hidden" name="id" id="routineId">
+                        <input type="hidden" name="current_image" id="routineCurrentImg">
+                        <input type="hidden" name="current_audio" id="routineCurrentAudio">
+                        
+                        <label>Heure indicative</label>
+                        <input type="time" name="time" id="routineTime" required>
+                        
+                        <label>Titre (ex: Petit Déj)</label>
+                        <input type="text" name="title" id="routineTitle" required>
 
-            <div>
-                {% for item in routine %}
-                <div class="item-row">
-                    <div class="item-info">
-                        <strong>{{ item.time }}</strong>
-                        {% if item.img %}
-                            <img src="{{ url_for('static', filename='uploads/edt/' + item.img) }}" class="mini-thumb">
-                        {% endif %}
-                        <span>{{ item.title }}</span>
-                    </div>
-                    <div>
-                        <button class="btn-edit" onclick='editRoutine({{ item|tojson }})'>Modif</button>
-                        <form action="{{ url_for('delete_routine_item') }}" method="POST" style="display:inline;" onsubmit="return confirm('Supprimer ?');">
-                            <input type="hidden" name="id" value="{{ item.id }}">
-                            <button type="submit" class="btn-delete">X</button>
-                        </form>
-                    </div>
+                        <label>🖼️ Image Principale</label>
+                        <input type="file" name="image_file" accept="image/*">
+
+                        <label>🎤 Enregistrer un Vocal (Optionnel)</label>
+                        <div class="audio-recorder-container">
+                            <div style="display:flex; gap: 10px; margin-bottom: 10px;">
+                                <button type="button" id="btn-record-routine" class="btn-record" onclick="startRecording('routine')">🔴 Enregistrer</button>
+                                <button type="button" id="btn-stop-routine" class="btn-stop" onclick="stopRecording('routine')" disabled>⏹️ Stopper</button>
+                            </div>
+                            <audio id="audio-preview-routine" controls style="display:none; width: 100%; height: 35px; margin-bottom: 5px;"></audio>
+                            
+                            <div style="font-size: 0.8rem; color: #666; margin-top: 10px;">Ou sélectionner un fichier :</div>
+                            <input type="file" name="audio_file" id="audio-input-routine" accept="audio/*" style="margin-bottom: 0;">
+                            <div id="routineAudioStatus" style="color: green; font-size: 0.8rem; margin-top: 5px; font-weight: bold;"></div>
+                        </div>
+                        
+                        <hr style="margin: 20px 0; border: 0; border-top: 1px solid #ddd;">
+
+                        <label>💬 Question Interactive (Optionnelle)</label>
+                        <input type="text" name="question" id="routineQuestion" placeholder="ex: Qu'as-tu mangé ?">
+                        
+                        <label>Options de réponses (Texte + Image)</label>
+                        <div id="dynamic-options-container"></div>
+                        <button type="button" class="btn-blue" onclick="addOptionRow()">+ Ajouter une option</button>
+                        
+                        <button type="submit" class="btn-green">ENREGISTRER</button>
+                        <button type="button" class="btn-gray" onclick="resetForm('routine')">Annuler / Nouveau</button>
+                    </form>
                 </div>
-                {% endfor %}
+                <div class="list-col">
+                    {% for item in routine %}
+                    <div class="item-row">
+                        <div class="item-info">
+                            <strong style="font-size: 1.2rem; color: #2196F3;">{{ item.time }}</strong>
+                            {% if item.img %} <img src="{{ url_for('static', filename='uploads/edt/' + item.img) }}" class="mini-thumb"> {% endif %}
+                            <div>
+                                <strong>{{ item.title }}</strong> {% if item.audio %} 🔊 {% endif %}<br>
+                                {% if item.question %}<small style="color: #888;">💬 {{ item.question }} ({{ item.options|length }} options)</small>{% endif %}
+                            </div>
+                        </div>
+                        <div>
+                            <button class="btn-edit" onclick='editRoutine({{ item|tojson }})'>✏️</button>
+                            <form action="{{ url_for('delete_planning_item') }}" method="POST" style="display:inline;" onsubmit="return confirm('Supprimer ?');">
+                                <input type="hidden" name="category" value="planning_routine">
+                                <input type="hidden" name="id" value="{{ item.id }}">
+                                <button type="submit" class="btn-delete">🗑️</button>
+                            </form>
+                        </div>
+                    </div>
+                    {% else %} <p>Aucune routine enregistrée.</p> {% endfor %}
+                </div>
             </div>
         </div>
 
-        <div class="admin-col">
-            <h2>📅 Événements Spéciaux</h2>
-            <p>Des exceptions pour une date précise.</p>
+        <div id="tab-weekly" class="tab-content">
+            <div class="admin-split">
+                <div class="form-col">
+                    <h3 id="weeklyFormTitle">Ajouter une Activité</h3>
+                    <form action="{{ url_for('save_weekly_item') }}" method="POST" enctype="multipart/form-data">
+                        <input type="hidden" name="id" id="weeklyId">
+                        <input type="hidden" name="current_image" id="weeklyCurrentImg">
+                        <input type="hidden" name="current_audio" id="weeklyCurrentAudio">
+                        
+                        <label>Jour de la semaine</label>
+                        <select name="day" id="weeklyDay" required>
+                            <option value="0">Lundi</option> <option value="1">Mardi</option> <option value="2">Mercredi</option>
+                            <option value="3">Jeudi</option> <option value="4">Vendredi</option> <option value="5">Samedi</option> <option value="6">Dimanche</option>
+                        </select>
 
-            <div class="form-box">
-                <h4 id="eventFormTitle">Ajouter un événement</h4>
-                <form action="{{ url_for('save_event_item') }}" method="POST" enctype="multipart/form-data">
-                    <input type="hidden" name="id" id="eventId">
-                    <input type="hidden" name="current_image" id="eventCurrentImg">
+                        <label>Heure</label><input type="time" name="time" id="weeklyTime" required>
+                        <label>Titre (ex: École, Danse)</label><input type="text" name="title" id="weeklyTitle" required>
 
-                    <label>Date</label>
-                    <input type="date" name="date" id="eventDate" required>
-                    
-                    <label>Heure indicative</label>
-                    <input type="time" name="time" id="eventTime" required>
-                    
-                    <label>Titre (ex: Mamie)</label>
-                    <input type="text" name="title" id="eventTitle" required>
-                    
-                    <label>Image</label>
-                    <input type="file" name="image_file" accept="image/*">
-                    
-                    <button type="submit" class="nav-btn" style="width:100%; margin-top:10px;">ENREGISTRER</button>
-                    <button type="button" onclick="resetEventForm()" style="width:100%; margin-top:5px; background:#ccc; border:none; padding:5px;">Annuler / Nouveau</button>
-                </form>
-            </div>
+                        <div class="checkbox-group">
+                            <label><input type="checkbox" name="ignore_holidays" id="weeklyIgnore"> Suspendre pendant les vacances</label>
+                        </div>
 
-            <div>
-                {% for item in events %}
-                <div class="item-row">
-                    <div class="item-info">
-                        <small>{{ item.date }}</small>
-                        <strong>{{ item.time }}</strong>
-                        {% if item.img %}
-                            <img src="{{ url_for('static', filename='uploads/edt/' + item.img) }}" class="mini-thumb">
-                        {% endif %}
-                        <span>{{ item.title }}</span>
-                    </div>
-                    <div>
-                        <button class="btn-edit" onclick='editEvent({{ item|tojson }})'>Modif</button>
-                        <form action="{{ url_for('delete_event_item') }}" method="POST" style="display:inline;" onsubmit="return confirm('Supprimer ?');">
-                            <input type="hidden" name="id" value="{{ item.id }}">
-                            <button type="submit" class="btn-delete">X</button>
-                        </form>
-                    </div>
+                        <label>🖼️ Image</label><input type="file" name="image_file" accept="image/*">
+
+                        <label>🎤 Enregistrer un Vocal (Optionnel)</label>
+                        <div class="audio-recorder-container">
+                            <div style="display:flex; gap: 10px; margin-bottom: 10px;">
+                                <button type="button" id="btn-record-weekly" class="btn-record" onclick="startRecording('weekly')">🔴 Enregistrer</button>
+                                <button type="button" id="btn-stop-weekly" class="btn-stop" onclick="stopRecording('weekly')" disabled>⏹️ Stopper</button>
+                            </div>
+                            <audio id="audio-preview-weekly" controls style="display:none; width: 100%; height: 35px; margin-bottom: 5px;"></audio>
+                            <div style="font-size: 0.8rem; color: #666; margin-top: 10px;">Ou uploader :</div>
+                            <input type="file" name="audio_file" id="audio-input-weekly" accept="audio/*" style="margin-bottom: 0;">
+                            <div id="weeklyAudioStatus" style="color: green; font-size: 0.8rem; margin-top: 5px; font-weight: bold;"></div>
+                        </div>
+                        
+                        <button type="submit" class="btn-green">ENREGISTRER</button>
+                        <button type="button" class="btn-gray" onclick="resetForm('weekly')">Annuler / Nouveau</button>
+                    </form>
                 </div>
-                {% endfor %}
+                <div class="list-col">
+                    {% set days_map = {0:'Lundi', 1:'Mardi', 2:'Mercredi', 3:'Jeudi', 4:'Vendredi', 5:'Samedi', 6:'Dimanche'} %}
+                    {% for item in weekly %}
+                    <div class="item-row">
+                        <div class="item-info">
+                            <strong style="width: 80px;">{{ days_map[item.day|int] }}</strong>
+                            <strong style="color: #2196F3;">{{ item.time }}</strong>
+                            {% if item.img %} <img src="{{ url_for('static', filename='uploads/edt/' + item.img) }}" class="mini-thumb"> {% endif %}
+                            <div>
+                                <strong>{{ item.title }}</strong> {% if item.audio %} 🔊 {% endif %}
+                                {% if item.ignore_holidays %} <span style="font-size:0.8rem; background:#ffeb3b; padding:2px 5px; border-radius:3px;">Sauf Vacances</span> {% endif %}
+                            </div>
+                        </div>
+                        <div>
+                            <button class="btn-edit" onclick='editWeekly({{ item|tojson }})'>✏️</button>
+                            <form action="{{ url_for('delete_planning_item') }}" method="POST" style="display:inline;">
+                                <input type="hidden" name="category" value="planning_weekly">
+                                <input type="hidden" name="id" value="{{ item.id }}">
+                                <button type="submit" class="btn-delete">🗑️</button>
+                            </form>
+                        </div>
+                    </div>
+                    {% else %} <p>Aucune activité hebdomadaire enregistrée.</p> {% endfor %}
+                </div>
             </div>
         </div>
 
+        <div id="tab-events" class="tab-content">
+            <div class="admin-split">
+                <div class="form-col">
+                    <h3 id="eventFormTitle">Ajouter un Événement</h3>
+                    <form action="{{ url_for('save_event_item') }}" method="POST" enctype="multipart/form-data">
+                        <input type="hidden" name="id" id="eventId">
+                        <input type="hidden" name="current_image" id="eventCurrentImg">
+                        <input type="hidden" name="current_audio" id="eventCurrentAudio">
+                        
+                        <label>Date</label><input type="date" name="date" id="eventDate" required>
+                        <label>Heure indicative</label><input type="time" name="time" id="eventTime">
+                        <label>Titre (ex: Anniversaire Mamie)</label><input type="text" name="title" id="eventTitle" required>
+
+                        <div class="checkbox-group">
+                            <label><input type="checkbox" name="is_annual" id="eventAnnual"> Se répète chaque année à cette date</label>
+                        </div>
+
+                        <label>🖼️ Image</label><input type="file" name="image_file" accept="image/*">
+
+                        <label>🎤 Enregistrer un Vocal (Optionnel)</label>
+                        <div class="audio-recorder-container">
+                            <div style="display:flex; gap: 10px; margin-bottom: 10px;">
+                                <button type="button" id="btn-record-event" class="btn-record" onclick="startRecording('event')">🔴 Enregistrer</button>
+                                <button type="button" id="btn-stop-event" class="btn-stop" onclick="stopRecording('event')" disabled>⏹️ Stopper</button>
+                            </div>
+                            <audio id="audio-preview-event" controls style="display:none; width: 100%; height: 35px; margin-bottom: 5px;"></audio>
+                            <div style="font-size: 0.8rem; color: #666; margin-top: 10px;">Ou uploader :</div>
+                            <input type="file" name="audio_file" id="audio-input-event" accept="audio/*" style="margin-bottom: 0;">
+                            <div id="eventAudioStatus" style="color: green; font-size: 0.8rem; margin-top: 5px; font-weight: bold;"></div>
+                        </div>
+                        
+                        <button type="submit" class="btn-green">ENREGISTRER</button>
+                        <button type="button" class="btn-gray" onclick="resetForm('event')">Annuler / Nouveau</button>
+                    </form>
+                </div>
+                <div class="list-col">
+                    {% for item in events %}
+                    <div class="item-row">
+                        <div class="item-info">
+                            <strong>{{ item.date }}</strong>
+                            <strong style="color: #2196F3;">{{ item.time }}</strong>
+                            {% if item.img %} <img src="{{ url_for('static', filename='uploads/edt/' + item.img) }}" class="mini-thumb"> {% endif %}
+                            <div>
+                                <strong>{{ item.title }}</strong> {% if item.audio %} 🔊 {% endif %}
+                                {% if item.is_annual %} <span style="font-size:0.8rem; background:#4CAF50; color:white; padding:2px 5px; border-radius:3px;">Annuel</span> {% endif %}
+                            </div>
+                        </div>
+                        <div>
+                            <button class="btn-edit" onclick='editEvent({{ item|tojson }})'>✏️</button>
+                            <form action="{{ url_for('delete_planning_item') }}" method="POST" style="display:inline;">
+                                <input type="hidden" name="category" value="planning_events">
+                                <input type="hidden" name="id" value="{{ item.id }}">
+                                <button type="submit" class="btn-delete">🗑️</button>
+                            </form>
+                        </div>
+                    </div>
+                    {% else %} <p>Aucun événement enregistré.</p> {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-holidays" class="tab-content">
+            <div class="admin-split">
+                <div class="form-col">
+                    <h3 id="holidayFormTitle">Ajouter des Vacances</h3>
+                    <form action="{{ url_for('save_holiday_item') }}" method="POST">
+                        <input type="hidden" name="id" id="holidayId">
+                        <label>Nom (ex: Vacances de Pâques)</label><input type="text" name="name" id="holidayName" required>
+                        <label>Date de début</label><input type="date" name="start_date" id="holidayStart" required>
+                        <label>Date de fin</label><input type="date" name="end_date" id="holidayEnd" required>
+                        <button type="submit" class="btn-green">ENREGISTRER</button>
+                        <button type="button" class="btn-gray" onclick="resetForm('holiday')">Annuler / Nouveau</button>
+                    </form>
+                </div>
+                <div class="list-col">
+                    {% for item in holidays %}
+                    <div class="item-row">
+                        <div class="item-info"><strong>🏖️ {{ item.name }}</strong><span style="color: #666;">Du {{ item.start_date }} au {{ item.end_date }}</span></div>
+                        <div>
+                            <button class="btn-edit" onclick='editHoliday({{ item|tojson }})'>✏️</button>
+                            <form action="{{ url_for('delete_planning_item') }}" method="POST" style="display:inline;">
+                                <input type="hidden" name="category" value="planning_holidays">
+                                <input type="hidden" name="id" value="{{ item.id }}">
+                                <button type="submit" class="btn-delete">🗑️</button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
-        // Fonctions pour pré-remplir les formulaires (Interface pure)
+        // --- MÉMOIRE DES ONGLETS ---
+        function openTab(tabName) {
+            let i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName("tab-content");
+            for (i = 0; i < tabcontent.length; i++) { tabcontent[i].style.display = "none"; }
+            tablinks = document.getElementsByClassName("tab-btn");
+            for (i = 0; i < tablinks.length; i++) { tablinks[i].classList.remove("active"); }
+            
+            document.getElementById(tabName).style.display = "block";
+            document.getElementById('btn-' + tabName).classList.add("active");
+            localStorage.setItem('activeAdminTab', tabName);
+        }
+
+        window.onload = function() {
+            let savedTab = localStorage.getItem('activeAdminTab') || 'tab-routine';
+            openTab(savedTab);
+        };
+
+        // --- ENREGISTREUR VOCAL DYNAMIQUE ---
+        let mediaRecorder;
+        let audioChunks = [];
+        let currentRecordContext = '';
+
+        async function startRecording(context) {
+            currentRecordContext = context;
+            audioChunks = [];
+            try {
+                // Demande l'accès au micro
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                
+                mediaRecorder.ondataavailable = event => {
+                    if (event.data.size > 0) audioChunks.push(event.data);
+                };
+                
+                mediaRecorder.onstop = () => {
+                    // Crée le fichier final (Blob)
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' }); 
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    
+                    // Affiche le lecteur pour écouter son chef d'oeuvre
+                    const preview = document.getElementById('audio-preview-' + context);
+                    preview.src = audioUrl;
+                    preview.style.display = 'block';
+                    
+                    // MAGIE : On injecte ce blob dans le champ <input type="file"> caché
+                    const file = new File([audioBlob], `vocal_${context}_${Date.now()}.webm`, { type: 'audio/webm' });
+                    const dataTransfer = new DataTransfer();
+                    dataTransfer.items.add(file);
+                    document.getElementById('audio-input-' + context).files = dataTransfer.files;
+                    
+                    // Coupe le micro
+                    stream.getTracks().forEach(track => track.stop());
+                };
+                
+                mediaRecorder.start();
+                
+                // Design des boutons
+                document.getElementById('btn-record-' + context).innerText = '🔴 Enregistrement...';
+                document.getElementById('btn-record-' + context).classList.add('recording-pulse');
+                document.getElementById('btn-stop-' + context).disabled = false;
+                
+            } catch (err) {
+                alert("Erreur d'accès au micro. Vérifiez les permissions de votre navigateur.");
+            }
+        }
+
+        function stopRecording(context) {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+                document.getElementById('btn-record-' + context).innerText = '🔴 Ré-enregistrer';
+                document.getElementById('btn-record-' + context).classList.remove('recording-pulse');
+                document.getElementById('btn-stop-' + context).disabled = true;
+            }
+        }
+
+        // --- OPTIONS DYNAMIQUES (ROUTINE) ---
+        let optionCounter = 0;
+        function addOptionRow(text = '', img = '') {
+            optionCounter++;
+            const container = document.getElementById('dynamic-options-container');
+            const div = document.createElement('div');
+            div.className = 'option-box';
+            let imgPreview = img ? `<img src="/static/uploads/edt/${img}" style="width:30px; height:30px; border-radius:4px; vertical-align:middle; margin-right:5px;">` : '';
+
+            div.innerHTML = `
+                <button type="button" class="btn-remove-opt" onclick="this.parentElement.remove()">X</button>
+                <input type="text" name="option_text_${optionCounter}" value="${text}" placeholder="Texte de l'option (ex: Pomme)" required style="margin-bottom: 5px;">
+                <input type="hidden" name="option_current_img_${optionCounter}" value="${img}">
+                <div style="font-size: 0.8rem; color: #666;">
+                    ${imgPreview} Image (Optionnelle) : 
+                    <input type="file" name="option_img_${optionCounter}" accept="image/*" style="padding: 5px;">
+                </div>
+            `;
+            container.appendChild(div);
+        }
+
+        // --- PRE-REMPLISSAGE ---
         function editRoutine(item) {
             document.getElementById('routineId').value = item.id;
-            document.getElementById('routineTitle').value = item.title;
             document.getElementById('routineTime').value = item.time;
+            document.getElementById('routineTitle').value = item.title;
+            document.getElementById('routineQuestion').value = item.question || '';
             document.getElementById('routineCurrentImg').value = item.img || '';
+            document.getElementById('routineCurrentAudio').value = item.audio || '';
+            document.getElementById('routineAudioStatus').innerText = item.audio ? "✓ Un audio ('" + item.audio + "') est déjà enregistré." : "";
             document.getElementById('routineFormTitle').innerText = "Modifier : " + item.title;
+            
+            const container = document.getElementById('dynamic-options-container');
+            container.innerHTML = ''; 
+            if (item.options && item.options.length > 0) {
+                item.options.forEach(opt => addOptionRow(opt.text, opt.img));
+            }
             window.scrollTo(0,0);
         }
 
-        function resetRoutineForm() {
-            document.getElementById('routineId').value = '';
-            document.getElementById('routineTitle').value = '';
-            document.getElementById('routineTime').value = '';
-            document.getElementById('routineCurrentImg').value = '';
-            document.getElementById('routineFormTitle').innerText = "Ajouter une tâche";
+        function editWeekly(item) {
+            document.getElementById('weeklyId').value = item.id;
+            document.getElementById('weeklyDay').value = item.day;
+            document.getElementById('weeklyTime').value = item.time;
+            document.getElementById('weeklyTitle').value = item.title;
+            document.getElementById('weeklyIgnore').checked = item.ignore_holidays;
+            document.getElementById('weeklyCurrentImg').value = item.img || '';
+            document.getElementById('weeklyCurrentAudio').value = item.audio || '';
+            document.getElementById('weeklyAudioStatus').innerText = item.audio ? "✓ Un audio ('" + item.audio + "') est déjà enregistré." : "";
+            document.getElementById('weeklyFormTitle').innerText = "Modifier : " + item.title;
+            window.scrollTo(0,0);
         }
 
         function editEvent(item) {
             document.getElementById('eventId').value = item.id;
             document.getElementById('eventDate').value = item.date;
-            document.getElementById('eventTitle').value = item.title;
             document.getElementById('eventTime').value = item.time;
+            document.getElementById('eventTitle').value = item.title;
+            document.getElementById('eventAnnual').checked = item.is_annual;
             document.getElementById('eventCurrentImg').value = item.img || '';
+            document.getElementById('eventCurrentAudio').value = item.audio || '';
+            document.getElementById('eventAudioStatus').innerText = item.audio ? "✓ Un audio ('" + item.audio + "') est déjà enregistré." : "";
             document.getElementById('eventFormTitle').innerText = "Modifier : " + item.title;
             window.scrollTo(0,0);
         }
 
-        function resetEventForm() {
-            document.getElementById('eventId').value = '';
-            document.getElementById('eventDate').value = '';
-            document.getElementById('eventTitle').value = '';
-            document.getElementById('eventTime').value = '';
-            document.getElementById('eventCurrentImg').value = '';
-            document.getElementById('eventFormTitle').innerText = "Ajouter un événement";
+        function editHoliday(item) {
+            document.getElementById('holidayId').value = item.id;
+            document.getElementById('holidayName').value = item.name;
+            document.getElementById('holidayStart').value = item.start_date;
+            document.getElementById('holidayEnd').value = item.end_date;
+            document.getElementById('holidayFormTitle').innerText = "Modifier : " + item.name;
+            window.scrollTo(0,0);
+        }
+
+        function resetForm(type) {
+            document.getElementById(type + 'Id').value = '';
+            document.getElementById(type + 'Title').value = '';
+            
+            // Réinitialise les audios
+            if (document.getElementById('audio-preview-' + type)) {
+                document.getElementById('audio-preview-' + type).style.display = 'none';
+                document.getElementById('audio-preview-' + type).src = '';
+                document.getElementById('btn-record-' + type).innerText = '🔴 Enregistrer';
+                document.getElementById('btn-record-' + type).classList.remove('recording-pulse');
+                document.getElementById('btn-stop-' + type).disabled = true;
+                document.getElementById(type + 'CurrentAudio').value = '';
+                document.getElementById(type + 'AudioStatus').innerText = '';
+            }
+
+            if(type === 'routine') {
+                document.getElementById('routineTime').value = '';
+                document.getElementById('routineQuestion').value = '';
+                document.getElementById('routineCurrentImg').value = '';
+                document.getElementById('dynamic-options-container').innerHTML = '';
+                document.getElementById('routineFormTitle').innerText = "Ajouter une Routine";
+            } else if (type === 'weekly') {
+                document.getElementById('weeklyTime').value = '';
+                document.getElementById('weeklyCurrentImg').value = '';
+                document.getElementById('weeklyFormTitle').innerText = "Ajouter une Activité";
+            } else if (type === 'event') {
+                document.getElementById('eventTime').value = '';
+                document.getElementById('eventCurrentImg').value = '';
+                document.getElementById('eventFormTitle').innerText = "Ajouter un Événement";
+            }
         }
     </script>
 </body>
