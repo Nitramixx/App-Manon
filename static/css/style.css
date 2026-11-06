@@ -675,68 +675,259 @@ header {
    --- JEU DE PUZZLE ---
    ================================================================= */
 
-.puzzle-container {
+.puzzle-page {
+    max-width: 1200px;
+    margin: 0 auto;
+    height: calc(100vh - 90px);
+    overflow: hidden;
     display: flex;
-    justify-content: center;
-    gap: 40px;
-    align-items: flex-start;
-    flex-wrap: wrap; /* Pour mobile */
-    margin-bottom: 50px;
-    width: 1200px;
+    flex-direction: column;
 }
 
-/* Barre latérale (Modèle) */
+.puzzle-layout {
+    display: flex;
+    justify-content: center;
+    align-items: stretch;
+    gap: 16px;
+    flex: 1;
+    min-height: 0;
+}
+
 .puzzle-sidebar {
-    width: 250px;
+    width: 180px;
+    flex-shrink: 0;
     text-align: center;
     background: white;
-    padding: 20px;
+    padding: 12px;
     border-radius: var(--border-radius);
     box-shadow: var(--shadow-soft);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
 .model-frame img {
-    width: 240px;
-    height: 180px;
+    width: 100%;
+    height: auto;
+    max-height: 140px;
+    object-fit: cover;
     border: 3px solid var(--pink-primary);
     border-radius: 10px;
-    margin-bottom: 20px;
+    display: block;
 }
 
-/* Le Plateau de Jeu */
+/* Mode tray : modèle ≈ grille côte à côte, pièces en barre bas */
+.puzzle-tray-layout {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    gap: 12px;
+}
+
+.puzzle-duo {
+    display: flex;
+    justify-content: center;
+    align-items: stretch;
+    gap: 20px;
+    flex: 1;
+    min-height: 0;
+    padding: 0 8px;
+}
+
+.puzzle-mode-tray .model-large {
+    flex: 1 1 0;
+    max-width: min(480px, 42vw);
+    aspect-ratio: var(--board-ratio, 4 / 3);
+    display: flex;
+    align-items: stretch;
+    justify-content: stretch;
+    background: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-soft);
+    padding: 8px;
+    min-height: 0;
+}
+
+.puzzle-mode-tray .model-large img {
+    width: 100%;
+    height: 100%;
+    max-height: none;
+    object-fit: fill;
+    border: 4px solid var(--pink-primary);
+    border-radius: 12px;
+}
+
+.puzzle-mode-tray .puzzle-board {
+    flex: 1 1 0;
+    max-width: min(480px, 42vw);
+    width: auto;
+    height: auto;
+    max-height: none;
+    aspect-ratio: var(--board-ratio, 4 / 3);
+    margin: 0;
+}
+
+.puzzle-portrait .puzzle-duo {
+    max-height: 68vh;
+}
+
+.puzzle-portrait.puzzle-mode-tray .model-large,
+.puzzle-portrait.puzzle-mode-tray .puzzle-board {
+    max-width: min(360px, 38vw);
+    max-height: 68vh;
+}
+
+.puzzle-tray-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-soft);
+    padding: 8px 12px;
+    flex-shrink: 0;
+    max-height: 22vh;
+}
+
+.puzzle-tray-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.puzzle-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.puzzle-btn-icon {
+    font-size: 1.4rem !important;
+    min-height: 48px;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+}
+
+.puzzle-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 0;
+}
+
 .puzzle-board {
     display: grid;
-    /* La taille est fixée à 600px car Python génère une image de 600px */
-    width: 800px;
-    height: 600px;
-    background-color: #333; /* Fond sombre pour voir les trous si besoin */
-    border: 5px solid #333;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-    /* Le nombre de colonnes est géré par l'attribut style inline dans le HTML */
+    width: min(560px, 100%);
+    aspect-ratio: var(--board-ratio, 4 / 3);
+    max-height: min(70vh, 520px);
+    margin: 0 auto;
+    background-color: #333;
+    border: 4px solid #333;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+    flex-shrink: 1;
 }
 
-/* La Pièce */
+.puzzle-sidebar .model-frame {
+    aspect-ratio: var(--board-ratio, 4 / 3);
+}
+
+.puzzle-sidebar .model-frame img {
+    width: 100%;
+    height: 100%;
+    max-height: none;
+    object-fit: fill;
+}
+
+.puzzle-board-tray .puzzle-slot {
+    background: repeating-linear-gradient(
+        45deg,
+        #444,
+        #444 8px,
+        #3a3a3a 8px,
+        #3a3a3a 16px
+    );
+    border: 1px dashed rgba(255,255,255,0.35);
+    position: relative;
+    min-height: 0;
+}
+
+.puzzle-board-tray .puzzle-slot.slot-hover {
+    outline: 3px solid var(--pink-primary);
+    outline-offset: -3px;
+}
+
+.puzzle-board-tray .puzzle-slot .puzzle-piece {
+    position: absolute;
+    inset: 0;
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.puzzle-tray {
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 4px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    flex: 1;
+    min-height: 0;
+}
+
+.puzzle-tray .tray-piece {
+    flex-shrink: 0;
+    border-radius: 6px;
+}
+
 .puzzle-piece {
-    background-size: 100% 100%; /* L'image découpée remplit la case */
+    background-size: 100% 100%;
     cursor: grab;
-    border: 1px solid rgba(255,255,255,0.3); /* Légère bordure pour guider */
+    border: 1px solid rgba(255,255,255,0.3);
     transition: transform 0.2s, border 0.2s, box-shadow 0.2s;
     box-sizing: border-box;
 }
 
-.puzzle-piece:active {
+.puzzle-piece:active,
+.puzzle-piece.dragging {
     cursor: grabbing;
+    opacity: 0.7;
 }
 
-/* État sélectionné (Pour le mode Click to Swap) */
 .puzzle-piece.selected {
-    border: 4px solid #f44336; /* Rouge bien visible */
+    border: 4px solid #f44336;
     z-index: 10;
-    transform: scale(0.95); /* Petit effet de recul */
+    transform: scale(0.95);
     box-shadow: 0 0 15px rgba(0,0,0,0.5);
 }
 
-/* État victoire (bordure verte autour du plateau gérée par JS) */
+.puzzle-win {
+    position: fixed;
+    inset: 0;
+    background: rgba(255,255,255,0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+    pointer-events: none;
+}
+
+.puzzle-win-icon {
+    font-size: 6rem;
+    animation: puzzlePop 0.5s ease;
+}
+
+@keyframes puzzlePop {
+    from { transform: scale(0.4); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
 
 /* =================================================================
    --- LECTEUR MUSIQUE (STYLE TV) ---

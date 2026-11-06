@@ -11,6 +11,16 @@ static/inbox_music/
 static/cache/
 static/uploads/
 
+# Installateur Python téléchargé localement par le lanceur
+python_installer.exe
+
 # Fichiers Python inutiles
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+.Python
+instance/
+
+# Profil Chrome kiosk local (hors repo)
+profil_manon/

@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, redirect, url_for, session
+from flask import Flask, render_template, request, jsonify, redirect, url_for, session, send_from_directory
 from werkzeug.utils import secure_filename
 import json
 import os
@@ -14,16 +14,38 @@ app = Flask(__name__)
 
 app.secret_key = 'manonapp' # Indispensable pour session
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+GAMES_DIR = os.path.join(BASE_DIR, 'games')
+
 UPLOAD_FOLDER = 'static/uploads/stories'
 ICON_FOLDER = 'static/uploads/icones'
 THEME_FOLDER = 'static/uploads/themes'
+
+DEFAULT_DB = {
+    'music': [], 'video': [], 'photo': [], 'story': [], 'writing_words': [],
+    'available_tags': {'music': [], 'video': [], 'photo': [], 'story': [], 'writing': []},
+    'music_themes': [], 'video_themes': [], 'photo_themes': [], 'story_themes': [], 'writing_themes': [],
+    'planning_routine': [], 'planning_weekly': [], 'planning_events': [], 'planning_holidays': [],
+    'planning_log': {},
+    'memory_config': {'num_pairs': 6, 'num_players': 1},
+    'puzzle_config': {'difficulty': 3, 'mode': 'swap'},
+    'games_config': {'bubble': {'show_aim_hints': True, 'best_score': 0}},
+}
 
 # Fonction utilitaire pour charger les données
 def load_data():
     base_path = os.path.dirname(os.path.abspath(__file__))
     json_path = os.path.join(base_path, 'database.json')
+    if not os.path.exists(json_path):
+        return json.loads(json.dumps(DEFAULT_DB))
     with open(json_path, 'r', encoding='utf-8') as f:
-        return json.load(f)
+        data = json.load(f)
+    # Garantir les clés de config jeux / puzzle
+    if 'puzzle_config' not in data:
+        data['puzzle_config'] = DEFAULT_DB['puzzle_config'].copy()
+    if 'games_config' not in data:
+        data['games_config'] = json.loads(json.dumps(DEFAULT_DB['games_config']))
+    return data
     
 def clean_filename(filename):
     """
@@ -40,6 +62,77 @@ def clean_filename(filename):
 @app.route('/')
 def index():
     return render_template('index.html')
+
+# --- JEUX ACCESSIBLES (dossier games/) ---
+
+@app.route('/jeux')
+def jeux_menu():
+    return render_template('games_menu.html')
+
+@app.route('/jeux/bulles')
+def jeux_bubble():
+    data = load_data()
+    cfg = data.get('games_config', {}).get('bubble', {'show_aim_hints': True})
+    best = int(data.get('games_config', {}).get('bubble', {}).get('best_score', 0) or 0)
+    return render_template(
+        'games_bubble.html',
+        show_aim_hints=bool(cfg.get('show_aim_hints', True)),
+        best_score=best,
+    )
+
+def _update_game_best(game_key, score):
+    data = load_data()
+    games_cfg = data.setdefault('games_config', {})
+    cfg = games_cfg.setdefault(game_key, {})
+    current = int(cfg.get('best_score', 0) or 0)
+    if score > current:
+        cfg['best_score'] = score
+        save_data(data)
+        current = score
+    return current
+
+@app.route('/api/games/bubble/best', methods=['POST'])
+def api_bubble_best():
+    payload = request.get_json(silent=True) or {}
+    try:
+        score = int(payload.get('score', 0))
+    except (TypeError, ValueError):
+        return jsonify({'ok': False}), 400
+    best = _update_game_best('bubble', score)
+    return jsonify({'ok': True, 'best_score': best})
+
+@app.route('/api/games/voiture/best', methods=['POST'])
+def api_voiture_best():
+    payload = request.get_json(silent=True) or {}
+    try:
+        score = int(payload.get('score', 0))
+    except (TypeError, ValueError):
+        return jsonify({'ok': False}), 400
+    best = _update_game_best('voiture', score)
+    return jsonify({'ok': True, 'best_score': best})
+
+@app.route('/admin/games')
+def admin_games():
+    data = load_data()
+    config = data.get('games_config', {'bubble': {'show_aim_hints': True}})
+    if 'bubble' not in config:
+        config['bubble'] = {'show_aim_hints': True}
+    return render_template('admin_games.html', config=config)
+
+@app.route('/admin/games/save', methods=['POST'])
+def save_games_config():
+    data = load_data()
+    data['games_config'] = {
+        'bubble': {
+            'show_aim_hints': bool(request.form.get('show_aim_hints'))
+        }
+    }
+    save_data(data)
+    return redirect(url_for('admin_games'))
+
+@app.route('/games/<path:filename>')
+def serve_game(filename):
+    return send_from_directory(GAMES_DIR, filename)
 
 # --- SECTION MUSIQUE (NOUVEAU SYSTÈME) ---
 
@@ -1754,52 +1847,69 @@ def puzzle_game(photo_id):
     except FileNotFoundError:
         return f"Erreur: Impossible d'ouvrir l'image à {image_path}", 404
 
-    # --- AJOUTER CETTE LIGNE ICI ---
     # Convertit l'image en RGB pour supprimer la transparence (Alpha) qui fait planter le JPG
     if img.mode in ('RGBA', 'LA') or (img.mode == 'P' and 'transparency' in img.info):
         img = img.convert('RGB')
-    # -------------------------------
 
-    # On redimensionne l'image pour qu'elle soit carrée (plus simple pour le puzzle)
-    # Ou on garde le ratio, mais pour un puzzle 3x3, le carré est idéal.
-    # Pour faire simple et joli : on crop au centre en carré de 600x600
-    target_size = (800, 600) # Tu peux ajuster la taille finale du puzzle ici
-    img = img.resize(target_size, Image.Resampling.LANCZOS) # Force en carré 600x600
+    # Même format modèle + grille : portrait / paysage / carré (max ~480px côté long)
+    src_w, src_h = img.size
+    max_side = 480
+    if src_w >= src_h:
+        # Paysage (ou carré)
+        board_w = max_side
+        board_h = max(grid_size * 40, int(round(max_side * src_h / src_w)))
+    else:
+        # Portrait
+        board_h = max_side
+        board_w = max(grid_size * 40, int(round(max_side * src_w / src_h)))
+
+    # Dimensions multiples de la grille pour des pièces exactes
+    board_w = max(grid_size, (board_w // grid_size) * grid_size)
+    board_h = max(grid_size, (board_h // grid_size) * grid_size)
+    target_size = (board_w, board_h)
+    img = img.resize(target_size, Image.Resampling.LANCZOS)
+
+    # Modèle = exactement la même image que la grille (pas l'original)
+    model_filename = 'model.jpg'
+    model_path = os.path.join(PUZZLE_CACHE_FOLDER, model_filename)
+    img.save(model_path)
+    model_src = f"cache/puzzle/{model_filename}"
 
     # 4. Découpage
-    tile_size = (target_size[0] // grid_size, target_size[1] // grid_size)
+    tile_w = board_w // grid_size
+    tile_h = board_h // grid_size
     pieces = []
-    
+
     for row in range(grid_size):
         for col in range(grid_size):
-            # Coordonnées de découpe (left, top, right, bottom)
-            left = col * tile_size[0]
-            top = row * tile_size[1]
-            right = left + tile_size[0]
-            bottom = top + tile_size[1]
-            
-            tile = img.crop((left, top, right, bottom))
-            
-            # Nom de fichier : piece_0_0.jpg (row_col)
+            left = col * tile_w
+            top = row * tile_h
+            tile = img.crop((left, top, left + tile_w, top + tile_h))
             filename = f"piece_{row}_{col}.jpg"
-            save_path = os.path.join(PUZZLE_CACHE_FOLDER, filename)
-            tile.save(save_path)
-            
-            # On stocke l'info pour le template
+            tile.save(os.path.join(PUZZLE_CACHE_FOLDER, filename))
             pieces.append({
-                'src': f"cache/puzzle/{filename}", # Chemin relatif web
-                'correct_pos': f"{row}-{col}",     # La réponse juste
+                'src': f"cache/puzzle/{filename}",
+                'correct_pos': f"{row}-{col}",
                 'id': f"tile-{row}-{col}"
             })
 
     # 5. Mélange
     random.shuffle(pieces)
 
-    return render_template('puzzle_game.html', 
-                           pieces=pieces, 
+    orientation = 'landscape' if board_w >= board_h else 'portrait'
+    if board_w == board_h:
+        orientation = 'square'
+
+    return render_template('puzzle_game.html',
+                           pieces=pieces,
                            grid_size=grid_size,
                            mode=config['mode'],
-                           original_image=target_photo['path'])
+                           original_image=model_src,
+                           board_w=board_w,
+                           board_h=board_h,
+                           tile_w=tile_w,
+                           tile_h=tile_h,
+                           orientation=orientation)
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

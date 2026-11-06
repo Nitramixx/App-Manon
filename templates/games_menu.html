@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% block title %}Jeux - Jeux Manon{% endblock %}
+
+{% block nav %}Jeux{% endblock %}
+
+{% block content %}
+    <h1 class="page-title">JEUX</h1>
+    <p class="page-subtitle">CHOISIS UN JEU</p>
+
+    <div class="grid">
+        <a href="{{ url_for('puzzle_menu') }}" class="card-link">
+            <span class="icon" style="font-size:4rem;">🧩</span>
+            <span>PUZZLE</span>
+        </a>
+        <a href="/games/voiture/index.html" class="card-link">
+            <span class="icon" style="font-size:4rem;">🚗</span>
+            <span>VOITURE</span>
+        </a>
+        <a href="/games/chat/index.html" class="card-link">
+            <span class="icon" style="font-size:4rem;">🐱</span>
+            <span>CHAT</span>
+        </a>
+        <a href="/games/ballons/index.html" class="card-link">
+            <span class="icon" style="font-size:4rem;">🎈</span>
+            <span>BALLONS</span>
+        </a>
+        <a href="{{ url_for('jeux_bubble') }}" class="card-link">
+            <span class="icon" style="font-size:4rem;">🫧</span>
+            <span>BULLES</span>
+        </a>
+    </div>
+{% endblock %}

@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
+  <title>Ballons</title>
+  <style>
+    html, body {
+      margin: 0; height: 100%; overflow: hidden;
+      background: linear-gradient(180deg, #7dd3fc 0%, #e0f2fe 40%, #fdf2f8 100%);
+      font-family: Lato, Arial, sans-serif;
+    }
+    #home-btn {
+      position: fixed; top: 12px; left: 12px; z-index: 100;
+      width: 72px; height: 72px; border-radius: 50%;
+      background: #bae6fd; border: 4px solid #fff;
+      box-shadow: 0 4px 12px rgba(0,0,0,.2);
+      display: flex; align-items: center; justify-content: center;
+      text-decoration: none; font-size: 2rem;
+    }
+    #hud {
+      position: fixed; top: 18px; left: 50%; transform: translateX(-50%);
+      z-index: 90; display: flex; gap: 24px;
+      font-size: 1.6rem; font-weight: 900;
+      background: rgba(255,255,255,.85); padding: 10px 22px;
+      border-radius: 999px; box-shadow: 0 4px 14px rgba(0,0,0,.12);
+    }
+    #hud .cur { color: #38bdf8; }
+    #hud .best { color: #f472b6; }
+    #stage-wrap {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+    }
+    #stage {
+      position: relative;
+      width: min(420px, 70vw);
+      height: 100%;
+      overflow: hidden;
+      background: linear-gradient(180deg, #38bdf8 0%, #e0f2fe 55%, #fef3c7 100%);
+      box-shadow: 0 0 0 6px #fff, 0 12px 40px rgba(0,0,0,.15);
+      border-radius: 24px;
+    }
+    .balloon {
+      position: absolute;
+      width: 120px; height: 150px;
+      cursor: pointer;
+      touch-action: manipulation;
+      filter: drop-shadow(0 8px 10px rgba(0,0,0,.18));
+      transition: transform .08s;
+    }
+    .balloon:active { transform: scale(1.08); }
+    .balloon svg { width: 100%; height: 100%; display: block; pointer-events: none; }
+    #fx { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+    .confetti {
+      position: absolute; width: 12px; height: 12px; border-radius: 2px;
+      animation: confetti 700ms ease-out forwards;
+    }
+    @keyframes confetti {
+      to { transform: translate(var(--dx), var(--dy)) rotate(240deg); opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+  <a id="home-btn" href="/jeux">🏠</a>
+  <div id="hud">
+    <span class="cur">⭐ <span id="score">0</span></span>
+    <span class="best">🏆 <span id="best">0</span></span>
+  </div>
+  <div id="stage-wrap">
+    <div id="stage">
+      <div id="fx"></div>
+    </div>
+  </div>
+
+  <script>
+  const COLORS = ["#f472b6", "#60a5fa", "#fbbf24", "#34d399", "#c084fc", "#fb7185"];
+  const stage = document.getElementById("stage");
+  const fx = document.getElementById("fx");
+  const balloons = new Set();
+  let score = 0;
+  let best = 0;
+  let popped = 0;
+  try { best = parseInt(localStorage.getItem("manon_ballons_best") || "0", 10) || 0; } catch (e) {}
+  document.getElementById("best").textContent = String(best);
+
+  function speedFactor() {
+    // Accélération progressive douce
+    return Math.min(2.4, 1 + popped * 0.06);
+  }
+
+  function balloonSvg(color) {
+    return `<svg viewBox="0 0 64 80" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="32" cy="30" rx="26" ry="30" fill="${color}"/>
+      <ellipse cx="22" cy="18" rx="8" ry="12" fill="rgba(255,255,255,.45)"/>
+      <path d="M32 60 L28 66 L36 66 Z" fill="${color}"/>
+      <path d="M32 66 Q30 72 32 78" stroke="#666" stroke-width="2" fill="none"/>
+    </svg>`;
+  }
+
+  function beep() {
+    try {
+      const ctx = window.__a || (window.__a = new (window.AudioContext || window.webkitAudioContext)());
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = "triangle";
+      o.frequency.setValueAtTime(420, ctx.currentTime);
+      o.frequency.exponentialRampToValueAtTime(120, ctx.currentTime + 0.18);
+      g.gain.value = 0.12;
+      o.connect(g); g.connect(ctx.destination);
+      o.start();
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
+      o.stop(ctx.currentTime + 0.2);
+    } catch (e) {}
+  }
+
+  function confettiAt(x, y, color) {
+    for (let i = 0; i < 14; i++) {
+      const c = document.createElement("div");
+      c.className = "confetti";
+      c.style.left = x + "px";
+      c.style.top = y + "px";
+      c.style.background = i % 2 ? color : COLORS[i % COLORS.length];
+      c.style.setProperty("--dx", (Math.random() * 160 - 80) + "px");
+      c.style.setProperty("--dy", (Math.random() * -120 - 20) + "px");
+      fx.appendChild(c);
+      setTimeout(() => c.remove(), 750);
+    }
+  }
+
+  function spawn() {
+    const el = document.createElement("div");
+    el.className = "balloon";
+    const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+    el.innerHTML = balloonSvg(color);
+    const size = 100 + Math.random() * 50;
+    el.style.width = size + "px";
+    el.style.height = (size * 1.25) + "px";
+    const maxX = Math.max(20, stage.clientWidth - size - 10);
+    el.style.left = (10 + Math.random() * maxX) + "px";
+    el.style.top = (stage.clientHeight + 10) + "px";
+    const base = 0.35 + Math.random() * 0.35;
+    el._vy = -base * speedFactor();
+    el._vx = (Math.random() - 0.5) * 0.25 * speedFactor();
+    el._color = color;
+
+    el.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const rect = stage.getBoundingClientRect();
+      confettiAt(e.clientX - rect.left, e.clientY - rect.top, color);
+      beep();
+      score += 1;
+      popped += 1;
+      document.getElementById("score").textContent = String(score);
+      if (score > best) {
+        best = score;
+        document.getElementById("best").textContent = String(best);
+        try { localStorage.setItem("manon_ballons_best", String(best)); } catch (err) {}
+      }
+      balloons.delete(el);
+      el.remove();
+    });
+
+    stage.appendChild(el);
+    balloons.add(el);
+  }
+
+  let lastSpawn = 0;
+  function loop(ts) {
+    if (!lastSpawn) lastSpawn = ts;
+    const spawnEvery = Math.max(700, 1800 / speedFactor());
+    if (ts - lastSpawn > spawnEvery && balloons.size < 7) {
+      spawn();
+      lastSpawn = ts;
+    }
+    balloons.forEach((el) => {
+      const top = parseFloat(el.style.top) + el._vy;
+      const left = parseFloat(el.style.left) + el._vx;
+      el.style.top = top + "px";
+      el.style.left = Math.min(Math.max(-20, left), stage.clientWidth - 40) + "px";
+      if (top < -180) {
+        balloons.delete(el);
+        el.remove();
+      }
+    });
+    requestAnimationFrame(loop);
+  }
+
+  setTimeout(spawn, 400);
+  setTimeout(spawn, 1200);
+  requestAnimationFrame(loop);
+  </script>
+</body>
+</html>

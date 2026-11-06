@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
+  <title>Chat</title>
+  <style>
+    :root {
+      --pink: #fbc4cb;
+      --blue: #bae6fd;
+      --cream: #fdf2f8;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; height: 100%; overflow: hidden;
+      font-family: Lato, Arial, sans-serif;
+      background: linear-gradient(180deg, #bae6fd 0%, #fdf2f8 45%, #fbc4cb 100%);
+    }
+    #home-btn {
+      position: fixed; top: 12px; left: 12px; z-index: 100;
+      width: 72px; height: 72px; border-radius: 50%;
+      background: var(--blue); border: 4px solid #fff;
+      box-shadow: 0 4px 12px rgba(0,0,0,.2);
+      display: flex; align-items: center; justify-content: center;
+      text-decoration: none; font-size: 2rem;
+    }
+    #room {
+      position: absolute; inset: 0 0 160px 0;
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48'%3E%3Cpath fill='%23ffe4c4' stroke='%23333' stroke-width='2' d='M16 28V12a3 3 0 0 1 6 0v10m0-8a3 3 0 0 1 6 0v10m0-6a3 3 0 0 1 6 0v8m0-4a3 3 0 0 1 6 0v10c0 7-5 12-12 12h-2c-7 0-14-4-14-12v-8a3 3 0 0 1 6 0v4'/%3E%3C/svg%3E") 8 4, grab;
+    }
+    #room:active { cursor: grabbing; }
+    body {
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48'%3E%3Cpath fill='%23ffe4c4' stroke='%23333' stroke-width='2' d='M16 28V12a3 3 0 0 1 6 0v10m0-8a3 3 0 0 1 6 0v10m0-6a3 3 0 0 1 6 0v8m0-4a3 3 0 0 1 6 0v10c0 7-5 12-12 12h-2c-7 0-14-4-14-12v-8a3 3 0 0 1 6 0v4'/%3E%3C/svg%3E") 8 4, pointer;
+    }
+    #room::before {
+      content: "";
+      position: absolute; left: 8%; right: 8%; bottom: 18%;
+      height: 18%;
+      background: rgba(255,255,255,.45);
+      border-radius: 40% 40% 10% 10%;
+      box-shadow: 0 8px 24px rgba(0,0,0,.08);
+    }
+    #oneko {
+      width: 96px !important;
+      height: 96px !important;
+      background-size: 768px 384px !important;
+      image-rendering: pixelated;
+      z-index: 20 !important;
+      pointer-events: none !important;
+    }
+    #gauges {
+      position: absolute; top: 16px; right: 16px;
+      display: flex; flex-direction: column; gap: 10px; z-index: 30;
+    }
+    .gauge {
+      width: 56px; height: 56px; border-radius: 50%;
+      background: #fff; border: 4px solid var(--pink);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.6rem; position: relative; overflow: hidden;
+      box-shadow: 0 4px 10px rgba(0,0,0,.1);
+    }
+    .gauge .fill {
+      position: absolute; left: 0; bottom: 0; width: 100%;
+      background: var(--pink); opacity: .45; transition: height .4s;
+    }
+    .gauge .ico { position: relative; z-index: 1; }
+    #care {
+      position: fixed; bottom: 0; left: 0; right: 0; height: 150px;
+      display: flex; justify-content: center; gap: 18px; padding: 16px;
+      background: linear-gradient(180deg, transparent, rgba(255,255,255,.7));
+      z-index: 40;
+    }
+    .care-btn {
+      width: 110px; height: 110px; border-radius: 50%;
+      border: 5px solid #fff; background: var(--pink);
+      font-size: 3rem; cursor: pointer;
+      box-shadow: 0 6px 0 #f9a8b4, 0 8px 18px rgba(0,0,0,.15);
+      transition: transform .15s;
+    }
+    .care-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #f9a8b4; }
+    .care-btn.play { background: var(--blue); box-shadow: 0 6px 0 #7dd3fc; }
+    .care-btn.sleep { background: #c4b5fd; box-shadow: 0 6px 0 #a78bfa; }
+    .care-btn.pet { background: #bbf7d0; box-shadow: 0 6px 0 #86efac; }
+    #fx {
+      position: fixed; inset: 0; pointer-events: none; z-index: 60;
+    }
+    .heart, .zz, .crumb {
+      position: absolute; font-size: 2rem;
+      animation: floatUp 1s ease-out forwards;
+    }
+    @keyframes floatUp {
+      from { transform: translateY(0) scale(1); opacity: 1; }
+      to { transform: translateY(-80px) scale(1.4); opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+  <a id="home-btn" href="/jeux">🏠</a>
+  <div id="gauges">
+    <div class="gauge" title="faim"><div class="fill" id="g-hunger" style="height:80%"></div><span class="ico">🥣</span></div>
+    <div class="gauge" title="jeu"><div class="fill" id="g-play" style="height:80%"></div><span class="ico">🎾</span></div>
+    <div class="gauge" title="sommeil"><div class="fill" id="g-sleep" style="height:80%"></div><span class="ico">😴</span></div>
+    <div class="gauge" title="câlin"><div class="fill" id="g-pet" style="height:80%"></div><span class="ico">✋</span></div>
+  </div>
+  <div id="room"></div>
+  <div id="care">
+    <button type="button" class="care-btn" data-act="feed" aria-label="Nourrir">🥣</button>
+    <button type="button" class="care-btn play" data-act="play" aria-label="Jouer">🎾</button>
+    <button type="button" class="care-btn sleep" data-act="sleep" aria-label="Dormir">😴</button>
+    <button type="button" class="care-btn pet" data-act="pet" aria-label="Caresser">✋</button>
+  </div>
+  <div id="fx"></div>
+
+  <script>
+  // Adapted from adryd325/oneko.js (MIT) — scaled for Manon care room
+  (function onekoManon() {
+    const isReducedMotion =
+      window.matchMedia(`(prefers-reduced-motion: reduce)`).matches === true;
+    if (isReducedMotion) return;
+
+    const SCALE = 3; // 32 -> 96
+    const nekoEl = document.createElement("div");
+    let nekoPosX = window.innerWidth / 2;
+    let nekoPosY = window.innerHeight / 3;
+    let mousePosX = nekoPosX;
+    let mousePosY = nekoPosY;
+    let frameCount = 0;
+    let idleTime = 0;
+    let idleAnimation = null;
+    let idleAnimationFrame = 0;
+    let forceIdle = null; // care animation override
+    const nekoSpeed = 12;
+    const spriteSets = {
+      idle: [[-3, -3]],
+      alert: [[-7, -3]],
+      scratchSelf: [[-5, 0], [-6, 0], [-7, 0]],
+      scratchWallN: [[0, 0], [0, -1]],
+      scratchWallS: [[-7, -1], [-6, -2]],
+      scratchWallE: [[-2, -2], [-2, -3]],
+      scratchWallW: [[-4, 0], [-4, -1]],
+      tired: [[-3, -2]],
+      sleeping: [[-2, 0], [-2, -1]],
+      N: [[-1, -2], [-1, -3]],
+      NE: [[0, -2], [0, -3]],
+      E: [[-3, 0], [-3, -1]],
+      SE: [[-5, -1], [-5, -2]],
+      S: [[-6, -3], [-7, -2]],
+      SW: [[-5, -3], [-6, -1]],
+      W: [[-4, -2], [-4, -3]],
+      NW: [[-1, 0], [-1, -1]],
+    };
+
+    function init() {
+      nekoEl.id = "oneko";
+      nekoEl.ariaHidden = true;
+      nekoEl.style.position = "fixed";
+      nekoEl.style.pointerEvents = "none";
+      nekoEl.style.imageRendering = "pixelated";
+      nekoEl.style.backgroundImage = "url(./oneko.gif)";
+      nekoEl.style.left = `${nekoPosX - 16 * SCALE}px`;
+      nekoEl.style.top = `${nekoPosY - 16 * SCALE}px`;
+      document.getElementById("room").appendChild(nekoEl);
+
+      const room = document.getElementById("room");
+      room.addEventListener("mousemove", (e) => {
+        mousePosX = e.clientX;
+        mousePosY = e.clientY;
+      });
+      room.addEventListener("touchmove", (e) => {
+        if (!e.touches[0]) return;
+        mousePosX = e.touches[0].clientX;
+        mousePosY = e.touches[0].clientY;
+      }, { passive: true });
+      room.addEventListener("click", (e) => {
+        mousePosX = e.clientX;
+        mousePosY = e.clientY;
+      });
+
+      window.requestAnimationFrame(onAnimationFrame);
+      window.manonNeko = { forceCareAnim, getPos: () => ({ x: nekoPosX, y: nekoPosY }) };
+    }
+
+    function forceCareAnim(name, frames) {
+      forceIdle = { name, left: frames };
+      idleAnimation = name;
+      idleAnimationFrame = 0;
+      idleTime = 20;
+    }
+
+    let lastFrameTimestamp;
+    function onAnimationFrame(timestamp) {
+      if (!nekoEl.isConnected) return;
+      if (!lastFrameTimestamp) lastFrameTimestamp = timestamp;
+      if (timestamp - lastFrameTimestamp > 100) {
+        lastFrameTimestamp = timestamp;
+        frame();
+      }
+      window.requestAnimationFrame(onAnimationFrame);
+    }
+
+    function setSprite(name, frame) {
+      const set = spriteSets[name] || spriteSets.idle;
+      const sprite = set[frame % set.length];
+      nekoEl.style.backgroundPosition = `${sprite[0] * 32 * SCALE}px ${sprite[1] * 32 * SCALE}px`;
+    }
+
+    function resetIdleAnimation() {
+      idleAnimation = null;
+      idleAnimationFrame = 0;
+    }
+
+    function idle() {
+      idleTime += 1;
+      if (forceIdle) {
+        setSprite(forceIdle.name, Math.floor(idleAnimationFrame / 2));
+        idleAnimationFrame += 1;
+        forceIdle.left -= 1;
+        if (forceIdle.left <= 0) forceIdle = null;
+        return;
+      }
+      if (idleTime > 10 && Math.floor(Math.random() * 200) == 0 && idleAnimation == null) {
+        let available = ["sleeping", "scratchSelf"];
+        idleAnimation = available[Math.floor(Math.random() * available.length)];
+      }
+      switch (idleAnimation) {
+        case "sleeping":
+          if (idleAnimationFrame < 8) { setSprite("tired", 0); break; }
+          setSprite("sleeping", Math.floor(idleAnimationFrame / 4));
+          if (idleAnimationFrame > 120) resetIdleAnimation();
+          break;
+        case "scratchSelf":
+          setSprite(idleAnimation, idleAnimationFrame);
+          if (idleAnimationFrame > 9) resetIdleAnimation();
+          break;
+        default:
+          setSprite("idle", 0);
+          return;
+      }
+      idleAnimationFrame += 1;
+    }
+
+    function frame() {
+      frameCount += 1;
+      if (forceIdle) { idle(); return; }
+
+      const diffX = nekoPosX - mousePosX;
+      const diffY = nekoPosY - mousePosY;
+      const distance = Math.sqrt(diffX ** 2 + diffY ** 2);
+      const half = 16 * SCALE;
+
+      if (distance < nekoSpeed || distance < 64) {
+        idle();
+        return;
+      }
+
+      idleAnimation = null;
+      idleAnimationFrame = 0;
+      if (idleTime > 1) {
+        setSprite("alert", 0);
+        idleTime = Math.min(idleTime, 7);
+        idleTime -= 1;
+        return;
+      }
+
+      let direction = "";
+      direction += diffY / distance > 0.5 ? "N" : "";
+      direction += diffY / distance < -0.5 ? "S" : "";
+      direction += diffX / distance > 0.5 ? "W" : "";
+      direction += diffX / distance < -0.5 ? "E" : "";
+      setSprite(direction || "idle", frameCount);
+
+      nekoPosX -= (diffX / distance) * nekoSpeed;
+      nekoPosY -= (diffY / distance) * nekoSpeed;
+      const maxY = window.innerHeight - 160 - half;
+      nekoPosX = Math.min(Math.max(half, nekoPosX), window.innerWidth - half);
+      nekoPosY = Math.min(Math.max(half + 20, nekoPosY), maxY);
+      nekoEl.style.left = `${nekoPosX - half}px`;
+      nekoEl.style.top = `${nekoPosY - half}px`;
+    }
+
+    init();
+  })();
+
+  // --- Care stats (no death) ---
+  const stats = { hunger: 80, play: 80, sleep: 80, pet: 80 };
+  const fills = {
+    hunger: document.getElementById("g-hunger"),
+    play: document.getElementById("g-play"),
+    sleep: document.getElementById("g-sleep"),
+    pet: document.getElementById("g-pet"),
+  };
+
+  function renderGauges() {
+    fills.hunger.style.height = stats.hunger + "%";
+    fills.play.style.height = stats.play + "%";
+    fills.sleep.style.height = stats.sleep + "%";
+    fills.pet.style.height = stats.pet + "%";
+  }
+
+  setInterval(() => {
+    stats.hunger = Math.max(15, stats.hunger - 0.15);
+    stats.play = Math.max(15, stats.play - 0.12);
+    stats.sleep = Math.max(15, stats.sleep - 0.1);
+    stats.pet = Math.max(15, stats.pet - 0.12);
+    renderGauges();
+  }, 2000);
+
+  function beep(freq, dur, type) {
+    try {
+      const ctx = window.__a || (window.__a = new (window.AudioContext || window.webkitAudioContext)());
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = type || "sine";
+      o.frequency.value = freq;
+      g.gain.value = 0.1;
+      o.connect(g); g.connect(ctx.destination);
+      o.start();
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+      o.stop(ctx.currentTime + dur);
+    } catch (e) {}
+  }
+
+  function spawnFx(emoji) {
+    const pos = window.manonNeko ? window.manonNeko.getPos() : { x: innerWidth / 2, y: innerHeight / 3 };
+    const el = document.createElement("div");
+    el.className = "heart";
+    el.textContent = emoji;
+    el.style.left = pos.x + "px";
+    el.style.top = pos.y + "px";
+    document.getElementById("fx").appendChild(el);
+    setTimeout(() => el.remove(), 1000);
+  }
+
+  document.getElementById("care").addEventListener("click", (e) => {
+    const btn = e.target.closest(".care-btn");
+    if (!btn) return;
+    const act = btn.dataset.act;
+    if (act === "feed") {
+      stats.hunger = Math.min(100, stats.hunger + 25);
+      window.manonNeko && window.manonNeko.forceCareAnim("scratchSelf", 20);
+      spawnFx("🐟"); beep(520, 0.15);
+    } else if (act === "play") {
+      stats.play = Math.min(100, stats.play + 25);
+      window.manonNeko && window.manonNeko.forceCareAnim("alert", 12);
+      spawnFx("🎾"); beep(660, 0.12, "triangle");
+    } else if (act === "sleep") {
+      stats.sleep = Math.min(100, stats.sleep + 30);
+      window.manonNeko && window.manonNeko.forceCareAnim("sleeping", 40);
+      spawnFx("💤"); beep(280, 0.25);
+    } else if (act === "pet") {
+      stats.pet = Math.min(100, stats.pet + 25);
+      window.manonNeko && window.manonNeko.forceCareAnim("scratchSelf", 16);
+      spawnFx("💗"); beep(740, 0.18);
+    }
+    renderGauges();
+  });
+  </script>
+</body>
+</html>

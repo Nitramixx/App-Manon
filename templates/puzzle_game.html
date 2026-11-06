@@ -4,105 +4,89 @@
 
 {% block nav %}PUZZLE{% endblock %}
 
-{% block content %}
-<div class="container">
-    <h1 class="page-title">RECONSTITUE L'IMAGE !</h1>
+{% block home_url %}{{ url_for('jeux_menu') }}{% endblock %}
+{% block home_label %}JEUX{% endblock %}
 
-    <div class="puzzle-container" id="media-focus">
-        
-        <div class="puzzle-sidebar">
-            <div class="model-frame">
-                <h3>Modèle</h3>
+{% block content %}
+<div class="container puzzle-page puzzle-mode-{{ mode }} puzzle-{{ orientation }}" id="media-focus"
+     style="--board-w: {{ board_w }}; --board-h: {{ board_h }}; --board-ratio: {{ board_w }} / {{ board_h }};">
+    {% if mode == 'tray' %}
+    <div class="puzzle-tray-layout">
+        <div class="puzzle-duo">
+            <div class="model-frame model-large">
                 <img src="{{ url_for('static', filename=original_image.replace('static/', '')) }}" alt="Modèle">
             </div>
-            
-            <div class="puzzle-controls">
-                <button onclick="location.reload()" class="btn-control" style="font-size: 1rem; width:100%; margin-bottom: 10px;">
-                    Mélanger
-                </button>
-                <a href="{{ url_for('puzzle_menu') }}" class="btn-back" style="display:block; text-align:center;">
-                    ⬅ Changer
-                </a>
+            <div class="puzzle-board puzzle-board-tray"
+                 id="board"
+                 style="grid-template-columns: repeat({{ grid_size }}, 1fr); grid-template-rows: repeat({{ grid_size }}, 1fr); aspect-ratio: {{ board_w }} / {{ board_h }};">
+                {% for i in range(grid_size * grid_size) %}
+                {% set row = i // grid_size %}
+                {% set col = i % grid_size %}
+                <div class="puzzle-slot"
+                     data-slot="{{ row }}-{{ col }}"
+                     data-correct="{{ row }}-{{ col }}"></div>
+                {% endfor %}
             </div>
         </div>
-
-        <div class="puzzle-board" id="board" style="grid-template-columns: repeat({{ grid_size }}, 1fr);">
-            {% for piece in pieces %}
-                <div class="puzzle-piece" 
-                     draggable="true" 
+        <div class="puzzle-tray-bar">
+            <div class="puzzle-tray-controls">
+                <button type="button" onclick="location.reload()" class="btn-control puzzle-btn-icon" title="Mélanger" aria-label="Mélanger">🔀</button>
+                <a href="{{ url_for('puzzle_menu') }}" class="btn-back puzzle-btn-icon" title="Changer" aria-label="Changer">⬅</a>
+            </div>
+            <div class="puzzle-tray" id="tray">
+                {% for piece in pieces %}
+                <div class="puzzle-piece tray-piece"
+                     draggable="true"
                      data-correct="{{ piece.correct_pos }}"
-                     style="background-image: url('{{ url_for('static', filename=piece.src) }}');">
-                </div>
-            {% endfor %}
+                     style="background-image: url('{{ url_for('static', filename=piece.src) }}');
+                            width: {{ tile_w }}px;
+                            height: {{ tile_h }}px;"></div>
+                {% endfor %}
+            </div>
         </div>
-
     </div>
-
-    <div id="win-message" style="display:none; text-align:center; margin-top:30px;">
-        <h2 style="color: #4CAF50; font-size: 3rem; text-shadow: 2px 2px 0px white;">BRAVO ! C'EST GAGNÉ ! 🎉</h2>
-        <a href="{{ url_for('puzzle_menu') }}" class="btn-control" style="background:#4CAF50;">NOUVEAU PUZZLE</a>
+    {% else %}
+    <div class="puzzle-layout">
+        <aside class="puzzle-sidebar">
+            <div class="model-frame">
+                <img src="{{ url_for('static', filename=original_image.replace('static/', '')) }}" alt="Modèle">
+            </div>
+            <div class="puzzle-controls">
+                <button type="button" onclick="location.reload()" class="btn-control puzzle-btn-icon" title="Mélanger" aria-label="Mélanger">🔀</button>
+                <a href="{{ url_for('puzzle_menu') }}" class="btn-back puzzle-btn-icon" title="Changer" aria-label="Changer">⬅</a>
+            </div>
+        </aside>
+        <div class="puzzle-main">
+            <div class="puzzle-board"
+                 id="board"
+                 style="grid-template-columns: repeat({{ grid_size }}, 1fr); aspect-ratio: {{ board_w }} / {{ board_h }};">
+                {% for piece in pieces %}
+                <div class="puzzle-piece"
+                     {% if mode == 'drag' %}draggable="true"{% endif %}
+                     data-correct="{{ piece.correct_pos }}"
+                     style="background-image: url('{{ url_for('static', filename=piece.src) }}');"></div>
+                {% endfor %}
+            </div>
+        </div>
     </div>
+    {% endif %}
 
+    <div id="win-message" class="puzzle-win" style="display:none;">
+        <span class="puzzle-win-icon">🎉</span>
+    </div>
 </div>
 
 <script>
+(function () {
+    const MODE = {{ mode|tojson }};
+    const GRID = {{ grid_size }};
     const board = document.getElementById('board');
+    const tray = document.getElementById('tray');
+    const winEl = document.getElementById('win-message');
     let selectedPiece = null;
-
-    // --- GESTION DU CLIC (SWAP) ---
-    board.addEventListener('click', function(e) {
-        // On vérifie qu'on a cliqué sur une pièce
-        const clickedPiece = e.target.closest('.puzzle-piece');
-        if (!clickedPiece) return;
-
-        // Si aucune pièce sélectionnée, on sélectionne celle-ci
-        if (!selectedPiece) {
-            selectedPiece = clickedPiece;
-            selectedPiece.classList.add('selected');
-        } 
-        // Si on clique sur la MÊME pièce, on désélectionne
-        else if (selectedPiece === clickedPiece) {
-            selectedPiece.classList.remove('selected');
-            selectedPiece = null;
-        } 
-        // Si on clique sur une AUTRE pièce, on échange !
-        else {
-            swapPieces(selectedPiece, clickedPiece);
-            selectedPiece.classList.remove('selected');
-            selectedPiece = null;
-            checkWin();
-        }
-    });
-
-    // --- GESTION DRAG & DROP (GLISSER-DÉPOSER) ---
     let draggedPiece = null;
 
-    board.addEventListener('dragstart', (e) => {
-        draggedPiece = e.target;
-        e.target.style.opacity = '0.5';
-    });
-
-    board.addEventListener('dragend', (e) => {
-        e.target.style.opacity = '1';
-    });
-
-    board.addEventListener('dragover', (e) => {
-        e.preventDefault(); // Autorise le drop
-    });
-
-    board.addEventListener('drop', (e) => {
-        e.preventDefault();
-        const targetPiece = e.target.closest('.puzzle-piece');
-        
-        if (targetPiece && draggedPiece && targetPiece !== draggedPiece) {
-            swapPieces(draggedPiece, targetPiece);
-            checkWin();
-        }
-    });
-
-    // --- FONCTION D'ÉCHANGE (SWAP DOM) ---
     function swapPieces(pieceA, pieceB) {
-        // Astuce : On crée un marqueur temporaire pour échanger les positions dans le DOM
         const temp = document.createElement('div');
         pieceA.parentNode.insertBefore(temp, pieceA);
         pieceB.parentNode.insertBefore(pieceA, pieceB);
@@ -110,32 +94,156 @@
         temp.parentNode.removeChild(temp);
     }
 
-    // --- VÉRIFICATION VICTOIRE ---
-    function checkWin() {
-        const pieces = document.querySelectorAll('.puzzle-piece');
-        const gridSize = {{ grid_size }};
+    function checkWinSwap() {
+        const pieces = board.querySelectorAll('.puzzle-piece');
         let isWin = true;
-
         pieces.forEach((piece, index) => {
-            // On calcule la position "row-col" attendue pour cet index de grille
-            const row = Math.floor(index / gridSize);
-            const col = index % gridSize;
-            const expectedPos = `${row}-${col}`;
+            const row = Math.floor(index / GRID);
+            const col = index % GRID;
+            if (piece.dataset.correct !== `${row}-${col}`) isWin = false;
+        });
+        if (isWin) showWin();
+    }
 
-            if (piece.dataset.correct !== expectedPos) {
-                isWin = false;
+    function checkWinTray() {
+        const slots = board.querySelectorAll('.puzzle-slot');
+        let isWin = true;
+        slots.forEach((slot) => {
+            const piece = slot.querySelector('.puzzle-piece');
+            if (!piece || piece.dataset.correct !== slot.dataset.correct) isWin = false;
+        });
+        if (isWin) showWin();
+    }
+
+    function showWin() {
+        winEl.style.display = 'flex';
+        board.style.borderColor = '#4CAF50';
+        board.querySelectorAll('.puzzle-piece').forEach(p => { p.style.border = 'none'; });
+    }
+
+    if (MODE === 'swap') {
+        board.addEventListener('click', function (e) {
+            const clicked = e.target.closest('.puzzle-piece');
+            if (!clicked) return;
+            if (!selectedPiece) {
+                selectedPiece = clicked;
+                selectedPiece.classList.add('selected');
+            } else if (selectedPiece === clicked) {
+                selectedPiece.classList.remove('selected');
+                selectedPiece = null;
+            } else {
+                swapPieces(selectedPiece, clicked);
+                selectedPiece.classList.remove('selected');
+                selectedPiece = null;
+                checkWinSwap();
             }
         });
-
-        if (isWin) {
-            document.getElementById('win-message').style.display = 'block';
-            board.style.border = '5px solid #4CAF50';
-            // Animation de succès
-            pieces.forEach(p => p.style.border = 'none');
-            
-            // Effet confetti simple (scroll en bas)
-            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-        }
     }
+
+    if (MODE === 'drag') {
+        board.addEventListener('dragstart', (e) => {
+            const p = e.target.closest('.puzzle-piece');
+            if (!p) return;
+            draggedPiece = p;
+            p.style.opacity = '0.5';
+        });
+        board.addEventListener('dragend', (e) => {
+            const p = e.target.closest('.puzzle-piece');
+            if (p) p.style.opacity = '1';
+        });
+        board.addEventListener('dragover', (e) => e.preventDefault());
+        board.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const target = e.target.closest('.puzzle-piece');
+            if (target && draggedPiece && target !== draggedPiece) {
+                swapPieces(draggedPiece, target);
+                checkWinSwap();
+            }
+            draggedPiece = null;
+        });
+    }
+
+    if (MODE === 'tray') {
+        function onDragStart(e) {
+            const p = e.target.closest('.puzzle-piece');
+            if (!p) return;
+            draggedPiece = p;
+            p.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        }
+        function onDragEnd(e) {
+            const p = e.target.closest('.puzzle-piece');
+            if (p) p.classList.remove('dragging');
+            draggedPiece = null;
+        }
+
+        tray.addEventListener('dragstart', onDragStart);
+        tray.addEventListener('dragend', onDragEnd);
+        board.addEventListener('dragstart', onDragStart);
+        board.addEventListener('dragend', onDragEnd);
+
+        board.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            const slot = e.target.closest('.puzzle-slot');
+            if (slot) slot.classList.add('slot-hover');
+        });
+        board.addEventListener('dragleave', (e) => {
+            const slot = e.target.closest('.puzzle-slot');
+            if (slot) slot.classList.remove('slot-hover');
+        });
+        board.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const slot = e.target.closest('.puzzle-slot');
+            if (!slot || !draggedPiece) return;
+            slot.classList.remove('slot-hover');
+            const existing = slot.querySelector('.puzzle-piece');
+            if (existing && existing !== draggedPiece) {
+                tray.appendChild(existing);
+                existing.classList.add('tray-piece');
+            }
+            draggedPiece.classList.remove('tray-piece');
+            slot.appendChild(draggedPiece);
+            checkWinTray();
+        });
+
+        tray.addEventListener('dragover', (e) => e.preventDefault());
+        tray.addEventListener('drop', (e) => {
+            e.preventDefault();
+            if (!draggedPiece) return;
+            draggedPiece.classList.add('tray-piece');
+            tray.appendChild(draggedPiece);
+        });
+
+        let touchSelected = null;
+        function clearTouchSelect() {
+            if (touchSelected) touchSelected.classList.remove('selected');
+            touchSelected = null;
+        }
+        document.addEventListener('click', (e) => {
+            const piece = e.target.closest('.puzzle-piece');
+            const slot = e.target.closest('.puzzle-slot');
+            if (piece && (piece.parentElement === tray || piece.closest('.puzzle-slot'))) {
+                if (touchSelected === piece) { clearTouchSelect(); return; }
+                clearTouchSelect();
+                touchSelected = piece;
+                piece.classList.add('selected');
+                return;
+            }
+            if (slot && touchSelected) {
+                const existing = slot.querySelector('.puzzle-piece');
+                if (existing && existing !== touchSelected) {
+                    tray.appendChild(existing);
+                    existing.classList.add('tray-piece');
+                }
+                touchSelected.classList.remove('tray-piece', 'selected');
+                slot.appendChild(touchSelected);
+                touchSelected = null;
+                checkWinTray();
+                return;
+            }
+            if (!piece) clearTouchSelect();
+        });
+    }
+})();
 </script>
 {% endblock %}

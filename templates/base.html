@@ -11,8 +11,8 @@
     <header>
         <nav class="main-nav">
             <div class="nav-left">
-                <a href="{{ url_for('index') }}" class="home-link"><img style="border:none; width: 40px;" src="{{ url_for('static', filename='uploads/icones/MAISON.png') }}" alt="#"></a>
-                <span style="color: #fff;">MENU</span>
+                <a href="{% block home_url %}{{ url_for('index') }}{% endblock %}" class="home-link"><img style="border:none; width: 40px;" src="{{ url_for('static', filename='uploads/icones/MAISON.png') }}" alt="#"></a>
+                <span style="color: #fff;">{% block home_label %}MENU{% endblock %}</span>
 
             </div>
 

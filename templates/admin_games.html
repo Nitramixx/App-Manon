@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Config Jeux</title>
+    <style>
+        body { font-family: sans-serif; padding: 2rem; max-width: 700px; margin: 0 auto; }
+        .card { border: 1px solid #ddd; padding: 24px; border-radius: 8px; margin-bottom: 20px; }
+        label { display: flex; align-items: center; gap: 12px; font-size: 1.2rem; cursor: pointer; }
+        button { font-size: 1.1rem; padding: 12px 24px; border-radius: 8px; border: none; background: #fbc4cb; cursor: pointer; }
+        a { color: #666; }
+        h1 { text-align: center; }
+    </style>
+</head>
+<body>
+    <a href="{{ url_for('admin') }}">← Retour Admin</a>
+    <h1>🎮 Configurer les Jeux</h1>
+
+    <div class="card">
+        <h2>🫧 Bulles</h2>
+        <form action="{{ url_for('save_games_config') }}" method="POST">
+            <label>
+                <input type="checkbox" name="show_aim_hints" value="1" {% if config.bubble.show_aim_hints %}checked{% endif %}>
+                Afficher des indices (halo) sur où tirer
+            </label>
+            <br><br>
+            <button type="submit">💾 ENREGISTRER</button>
+        </form>
+    </div>
+
+    <p style="color:#888;">Le Puzzle se configure toujours via <a href="{{ url_for('admin_puzzle') }}">Configurer le Puzzle</a>.</p>
+</body>
+</html>

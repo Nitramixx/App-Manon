@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+
+{% block title %}Bulles - Jeux Manon{% endblock %}
+
+{% block nav %}Bulles{% endblock %}
+
+{% block home_url %}{{ url_for('jeux_menu') }}{% endblock %}
+{% block home_label %}JEUX{% endblock %}
+
+{% block content %}
+<style>
+  .bubble-wrap {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 10px 0 30px;
+  }
+  #viewport {
+    max-width: 100%;
+    border-radius: 20px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    background: #fdf2f8;
+    touch-action: none;
+  }
+  .bubble-hint {
+    text-align: center;
+    font-size: 2.5rem;
+    margin: 0 0 8px;
+    opacity: 0.85;
+  }
+  .bubble-scores {
+    display: flex;
+    justify-content: center;
+    gap: 28px;
+    font-size: 1.5rem;
+    font-weight: 900;
+    margin: 0 0 8px;
+  }
+  .bubble-scores .cur { color: #38bdf8; }
+  .bubble-scores .best { color: #f472b6; }
+</style>
+
+{% if show_aim_hints %}
+<p class="bubble-hint" aria-hidden="true">👆✨</p>
+{% endif %}
+<div class="bubble-scores">
+  <span class="cur">⭐ <span id="bubble-score-value">0</span></span>
+  <span class="best">🏆 <span id="bubble-best-value">0</span></span>
+</div>
+
+<div class="bubble-wrap">
+  <canvas id="viewport" width="480" height="640"></canvas>
+</div>
+
+<script>
+  window.MANON_BUBBLE_CONFIG = {
+    show_aim_hints: {{ 'true' if show_aim_hints else 'false' }},
+    sprite: "{{ url_for('serve_game', filename='bubble/bubble-sprites.png') }}",
+    best_score: {{ best_score|int }}
+  };
+</script>
+<script src="{{ url_for('serve_game', filename='bubble/bubble-shooter-example.js') }}"></script>
+{% endblock %}
